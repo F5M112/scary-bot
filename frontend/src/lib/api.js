@@ -18,10 +18,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    // Handle 429 (rate limit) — show toast, don't retry
+    // Handle 429 (rate limit)
     if (err.response?.status === 429) {
       if (typeof window !== 'undefined') {
-        // Use a global flag to avoid spamming toasts
         if (!window.__rateLimitToastShown) {
           window.__rateLimitToastShown = true;
           import('react-hot-toast').then((m) => {
@@ -33,7 +32,11 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
 
-    if (err.response?.status === 401 && typeof window !== 'undefined') {
+    // Handle 401 — but NOT for discord/guilds (token might be expired, handled gracefully)
+    const url = err.config?.url || '';
+    const isDiscordGuilds = url.includes('discord/guilds') || url.includes('discord/link');
+
+    if (err.response?.status === 401 && !isDiscordGuilds && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login';

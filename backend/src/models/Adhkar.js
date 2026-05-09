@@ -25,7 +25,7 @@ const adhkarSchema = new mongoose.Schema({
 
   // Tracking
   lastSentAt:    { type: Date },
-  lastSentIndex: { type: Number, default: -1 },          // To avoid repetition
+  lastSentIndex: { type: String, default: '' },   // e.g. "quran-4", "duaa-7"
   totalSent:     { type: Number, default: 0 },
 
   createdAt: { type: Date, default: Date.now },
