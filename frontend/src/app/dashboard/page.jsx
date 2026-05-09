@@ -55,7 +55,11 @@ export default function DashboardHome() {
       if (user?.isDiscordLinked) {
         try {
           const dis = await authAPI.discordGuilds();
-          setDiscordGuilds(dis.data.guilds);
+          setDiscordGuilds(dis.data.guilds || []);
+          if (dis.data.tokenExpired) {
+            toast.error('انتهت صلاحية ربط ديسكورد. أعد الربط من الزر أدناه.');
+            await fetchUser(); // refresh user to show unlinked state
+          }
         } catch {
           setDiscordGuilds([]);
         }

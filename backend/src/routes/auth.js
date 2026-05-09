@@ -244,7 +244,6 @@ router.get('/discord/guilds', authenticate, async (req, res) => {
       headers: { Authorization: `Bearer ${req.user.discordAccessToken}` },
     });
 
-    // Filter to ADMIN or OWNER only
     const MANAGE_GUILD = 0x20n;
     const adminGuilds = guildsRes.data.filter((g) => {
       try {
@@ -257,9 +256,13 @@ router.get('/discord/guilds', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Fetch guilds error:', err.response?.data || err.message);
     if (err.response?.status === 401) {
-      return res.status(401).json({ error: 'انتهت صلاحية ربط ديسكورد. أعد الربط.' });
+      // Token expired — clear it and return empty list (user will re-link)
+      req.user.discordAccessToken  = undefined;
+      req.user.discordRefreshToken = undefined;
+      await req.user.save().catch(() => {});
+      return res.json({ guilds: [], tokenExpired: true });
     }
-    res.status(500).json({ error: 'فشل في جلب السيرفرات من ديسكورد.' });
+    res.json({ guilds: [] });
   }
 });
 
