@@ -12,7 +12,7 @@ const watchedChannelSchema = new mongoose.Schema({
   channelUsername:    { type: String, required: true, lowercase: true, trim: true },
   channelDisplayName: { type: String },
   channelAvatar:      { type: String },
-  channelId:          { type: String },   // platform-specific ID
+  channelId:          { type: String },   // YouTube channel ID (UC...), auto-discovered
 
   // Discord notification settings
   notifyChannelId: { type: String, required: true },
