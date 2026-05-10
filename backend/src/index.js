@@ -34,6 +34,9 @@ app.use(cors({
   credentials: true,
 }));
 
+// Trust Render's proxy (required for rate limiting and real IPs)
+app.set('trust proxy', 1);
+
 app.use(express.json({ limit: '10kb' }));
 
 // ── Rate Limit (relaxed in development) ─────────────────────────
