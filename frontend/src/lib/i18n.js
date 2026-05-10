@@ -467,7 +467,7 @@ const translations = {
     giveawayEmptyDesc: 'Create your first giveaway',
 
     // Kick Live
-    kickLive: 'Kick Live',
+    kickLive: 'Social Media Alerts',
     kickLiveDesc: 'Get notified when streamers go live on Kick',
     kickAddChannel: 'Add Channel',
     kickSearch: 'Search Kick channel',
