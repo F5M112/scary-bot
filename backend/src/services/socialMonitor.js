@@ -299,6 +299,7 @@ async function sendNotification(bot, channel, data) {
 
     const platform = PLATFORMS[channel.platform] || PLATFORMS.kick;
     const isVideo = data.type === 'video';
+    const platform = PLATFORMS[channel.platform] || PLATFORMS.kick;
 
     const render = (tpl) => (tpl || '')
       .replace(/\{streamer\}/g, data.displayName || channel.channelUsername)
@@ -307,25 +308,24 @@ async function sendNotification(bot, channel, data) {
       .replace(/\{viewers\}/g,  (data.viewers || 0).toString())
       .replace(/\{type\}/g,     isVideo ? 'فيديو جديد' : 'بث مباشر');
 
-    // Build message content
     let content = '';
     if (channel.mentionEveryone)    content = '@everyone ';
     else if (channel.mentionRoleId) content = `<@&${channel.mentionRoleId}> `;
 
-    const defaultTemplate = isVideo
-      ? `${platform.emoji} {streamer} نشر فيديو جديد! {link}`
-      : `${platform.emoji} {streamer} الآن مباشر! {link}`;
+    // Use video template or live template based on type
+    const msgTemplate = isVideo
+      ? (channel.videoMessageTemplate || `${platform.emoji} {streamer} نشر فيديو جديد! {link}`)
+      : (channel.messageTemplate      || `${platform.emoji} {streamer} الآن مباشر! {link}`);
 
-    content += render(channel.messageTemplate || defaultTemplate);
+    content += render(msgTemplate);
 
-    // Build embed
-    const embedTitle = isVideo
-      ? `🎬 فيديو جديد من {streamer}`
-      : `${platform.emoji} [LIVE] {streamer}`;
+    const titleTemplate = isVideo
+      ? (channel.videoEmbedTitle || `🎬 فيديو جديد من {streamer}`)
+      : (channel.embedTitle       || `${platform.emoji} [LIVE] {streamer}`);
 
     const embed = new EmbedBuilder()
       .setColor(channel.embedColor || platform.color)
-      .setTitle(render(channel.embedTitle || embedTitle))
+      .setTitle(render(titleTemplate))
       .setURL(data.url)
       .setAuthor({
         name:    `${platform.emoji} ${data.displayName || channel.channelUsername}`,
@@ -338,7 +338,6 @@ async function sendNotification(bot, channel, data) {
     if (data.category)  embed.addFields({ name: '🎮 الفئة', value: data.category, inline: true });
     if (data.viewers)   embed.addFields({ name: '👥 المشاهدون', value: data.viewers.toString(), inline: true });
     if (data.thumbnail) embed.setImage(data.thumbnail);
-
     embed.setFooter({ text: isVideo ? `فيديو جديد على ${platform.label}` : `بث مباشر على ${platform.label}` });
 
     await discordCh.send({ content: content.trim(), embeds: [embed] });
