@@ -227,7 +227,7 @@ const translations = {
     giveawayEmptyDesc: 'ابدأ بإنشاء أول مسابقة لسيرفرك',
 
     // Kick Live
-    kickLive: 'Kick Live',
+    kickLive: 'Social Media Alerts',
     kickLiveDesc: 'تنبيهات بدء البث على Kick',
     kickAddChannel: 'إضافة قناة',
     kickSearch: 'ابحث عن قناة Kick',
