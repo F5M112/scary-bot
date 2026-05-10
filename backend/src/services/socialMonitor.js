@@ -14,28 +14,68 @@ export const PLATFORMS = {
   tiktok:  { label: 'TikTok',  emoji: '🎵', color: '#ff0050', supportsLive: false, supportsVideos: false, urlTemplate: 'https://tiktok.com/@{username}' },
 };
 
-// ── KICK (official API — works from servers) ──────────────────────
-async function fetchKick(channel) {
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept': 'application/json, text/html, */*',
+};
+
+// Try multiple methods to fetch a URL
+async function smartFetch(url) {
+  // 1. Direct
+  try {
+    const { data } = await axios.get(url, { headers: BROWSER_HEADERS, timeout: 10000 });
+    return typeof data === 'string' ? data : JSON.stringify(data);
+  } catch {}
+
+  // 2. allorigins proxy
   try {
     const { data } = await axios.get(
-      `https://kick.com/api/v2/channels/${channel.channelUsername.toLowerCase()}`,
-      {
-        headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
-        timeout: 12000,
-      }
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      { timeout: 12000 }
     );
-    const ls     = data.livestream;
-    const isLive = !!ls && ls.is_live === true;
+    return typeof data === 'string' ? data : JSON.stringify(data);
+  } catch {}
+
+  // 3. corsproxy
+  try {
+    const { data } = await axios.get(
+      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      { headers: BROWSER_HEADERS, timeout: 12000 }
+    );
+    return typeof data === 'string' ? data : JSON.stringify(data);
+  } catch {}
+
+  return null;
+}
+
+// ── KICK ──────────────────────────────────────────────────────────
+async function fetchKick(channel) {
+  try {
+    const raw = await smartFetch(
+      `https://kick.com/api/v2/channels/${channel.channelUsername.toLowerCase()}`
+    );
+    if (!raw) return null;
+
+    let parsed;
+    try { parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; }
+    catch { return null; }
+
+    const ls   = parsed.livestream;
+    const live = !!ls && (ls.is_live === true || ls.is_live === 1);
+
     return {
-      type:        isLive ? 'live' : null,
+      type:        live ? 'live' : null,
       title:       ls?.session_title || '',
       viewers:     ls?.viewer_count  || 0,
       category:    ls?.categories?.[0]?.name || '',
       thumbnail:   ls?.thumbnail?.url || null,
-      displayName: data.user?.username || channel.channelUsername,
-      avatar:      data.user?.profile_pic || null,
-      streamId:    isLive ? `kick_live_${channel.channelUsername}` : `kick_offline_${channel.channelUsername}`,
-      url:         `https://kick.com/${channel.channelUsername}`,
+      displayName: parsed.user?.username || channel.channelUsername,
+      avatar:      parsed.user?.profile_pic || null,
+      streamId:    live
+        ? `kick_live_${ls?.id || channel.channelUsername}`
+        : `kick_off_${channel.channelUsername}`,
+      url: `https://kick.com/${channel.channelUsername}`,
     };
   } catch (err) {
     console.warn(`[kick] ${channel.channelUsername}: ${err.message}`);
@@ -43,117 +83,60 @@ async function fetchKick(channel) {
   }
 }
 
-// ── YOUTUBE (RSS feed — most reliable, works from all servers) ────
+// ── YOUTUBE RSS ───────────────────────────────────────────────────
 async function fetchYouTube(channel) {
   try {
-    // Build RSS URL — use channelId if known, else try by username
-    let rssUrl = channel.channelId
+    const rssUrl = channel.channelId
       ? `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.channelId}`
       : `https://www.youtube.com/feeds/videos.xml?user=${channel.channelUsername}`;
 
-    let xml;
-    try {
-      const { data } = await axios.get(rssUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        timeout: 10000,
-      });
-      xml = data;
-    } catch {
-      // If user-based RSS fails, try @handle based channel page to find ID
-      if (!channel.channelId) {
-        try {
-          const { data: page } = await axios.get(
-            `https://www.youtube.com/@${channel.channelUsername}`,
-            { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 }
-          );
-          const match = page.match(/channel_id=([^"&]+)/);
-          if (match) {
-            channel.channelId = match[1]; // save for next time
-            const { data } = await axios.get(
-              `https://www.youtube.com/feeds/videos.xml?channel_id=${match[1]}`,
-              { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 }
-            );
-            xml = data;
-          }
-        } catch {}
-      }
-    }
-
+    const xml = await smartFetch(rssUrl);
     if (!xml) return null;
 
-    // Parse first entry from RSS
-    const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
-    if (!entryMatch) return null;
-
-    const entry      = entryMatch[1];
-    const videoId    = (entry.match(/<yt:videoId>([^<]+)/) || [])[1];
-    const title      = (entry.match(/<title>([^<]+)/)      || [])[1] || '';
-    const published  = (entry.match(/<published>([^<]+)/)  || [])[1] || '';
+    const videoId = (xml.match(/<yt:videoId>([^<]+)/)             || [])[1];
+    const title   = (xml.match(/<title>(?!YouTube)([^<]+)/)       || [])[1] || '';
+    const pubStr  = (xml.match(/<published>([^<]+)/)              || [])[1] || '';
 
     if (!videoId) return null;
 
-    const ageMs     = Date.now() - new Date(published).getTime();
-    const ageMin    = ageMs / 60000;
-    const isRecent  = ageMin < 60; // published within last hour
+    const ageMin   = (Date.now() - new Date(pubStr).getTime()) / 60000;
+    const isRecent = ageMin < 60;
+    if (!isRecent) return { type: null };
 
-    // Determine if it's live via the video's oEmbed (lightweight)
+    // Check if live via oEmbed
     let isLive = false;
     try {
-      const { data: oembed } = await axios.get(
-        `https://www.youtube.com/oembed?url=https://youtube.com/watch?v=${videoId}&format=json`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 5000 }
+      const oembed = await smartFetch(
+        `https://www.youtube.com/oembed?url=https://youtube.com/watch?v=${videoId}&format=json`
       );
-      // If oembed title contains [LIVE] or similar, it might be live
-      isLive = oembed.title?.includes('[LIVE]') || oembed.title?.includes('🔴');
+      if (oembed) isLive = oembed.includes('"isLive":true') || oembed.includes('[LIVE]');
     } catch {}
 
-    if (isLive) {
-      return {
-        type:        'live',
-        title:       decodeXML(title),
-        streamId:    `yt_live_${videoId}`,
-        url:         `https://youtube.com/watch?v=${videoId}`,
-        thumbnail:   `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-        displayName: channel.channelDisplayName || channel.channelUsername,
-      };
-    }
-
-    if (isRecent) {
-      return {
-        type:        'video',
-        title:       decodeXML(title),
-        streamId:    `yt_video_${videoId}`,
-        url:         `https://youtube.com/watch?v=${videoId}`,
-        thumbnail:   `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-        displayName: channel.channelDisplayName || channel.channelUsername,
-      };
-    }
-
-    return { type: null };
+    return {
+      type:        isLive ? 'live' : 'video',
+      title:       decodeXML(title),
+      streamId:    isLive ? `yt_live_${videoId}` : `yt_video_${videoId}`,
+      url:         `https://youtube.com/watch?v=${videoId}`,
+      thumbnail:   `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      displayName: channel.channelDisplayName || channel.channelUsername,
+    };
   } catch (err) {
     console.warn(`[youtube] ${channel.channelUsername}: ${err.message}`);
     return null;
   }
 }
 
-// ── TWITCH (HTML scraping fallback) ──────────────────────────────
+// ── TWITCH ────────────────────────────────────────────────────────
 async function fetchTwitch(channel) {
   try {
-    const { data } = await axios.get(
-      `https://twitch.tv/${channel.channelUsername}`,
-      {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', Accept: 'text/html' },
-        timeout: 12000,
-      }
-    );
-    const isLive = data.includes('"isLiveBroadcast"')   ||
-                   data.includes('"type":"live"')         ||
-                   data.includes('isLiveBroadcast":true');
+    const html = await smartFetch(`https://twitch.tv/${channel.channelUsername}`);
+    if (!html) return null;
+    const isLive = html.includes('"isLiveBroadcast"') || html.includes('"type":"live"');
     return {
       type:        isLive ? 'live' : null,
       title:       '',
       displayName: channel.channelDisplayName || channel.channelUsername,
-      streamId:    isLive ? `twitch_live_${channel.channelUsername}` : `twitch_offline_${channel.channelUsername}`,
+      streamId:    isLive ? `twitch_live_${channel.channelUsername}` : `twitch_off_${channel.channelUsername}`,
       url:         `https://twitch.tv/${channel.channelUsername}`,
     };
   } catch (err) {
@@ -162,21 +145,17 @@ async function fetchTwitch(channel) {
   }
 }
 
-// ── TIKTOK (disabled — blocks server requests reliably) ───────────
-async function fetchTikTok(channel) {
-  // TikTok aggressively blocks server IPs — return null to skip silently
-  return null;
-}
+async function fetchTikTok() { return null; }
 
 function decodeXML(str) {
   return (str || '')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
 
 const FETCHERS = { kick: fetchKick, youtube: fetchYouTube, twitch: fetchTwitch, tiktok: fetchTikTok };
 
-// ── LOOKUP (for UI) ───────────────────────────────────────────────
+// ── LOOKUP ────────────────────────────────────────────────────────
 export async function lookupChannel(platform, username) {
   try {
     const fakeChannel = { channelUsername: username, channelDisplayName: username, channelId: null };
@@ -184,7 +163,7 @@ export async function lookupChannel(platform, username) {
     return {
       username,
       displayName: data?.displayName || username,
-      avatar:      data?.avatar      || null,
+      avatar:      data?.avatar || null,
       isLive:      data?.type === 'live',
       platform,
       url:         data?.url || PLATFORMS[platform]?.urlTemplate?.replace('{username}', username),
@@ -192,72 +171,55 @@ export async function lookupChannel(platform, username) {
     };
   } catch {
     return {
-      username, displayName: username, avatar: null,
-      isLive: false, platform, verified: false,
+      username, displayName: username, avatar: null, isLive: false, platform, verified: false,
       url: PLATFORMS[platform]?.urlTemplate?.replace('{username}', username),
     };
   }
 }
 
-// ── MONITOR TICK ──────────────────────────────────────────────────
+// ── MONITOR ───────────────────────────────────────────────────────
 async function tickMonitor() {
   try {
     const allAlerts = await SocialAlert.find({ 'channels.0': { $exists: true } });
     for (const alert of allAlerts) {
       try { await processAlert(alert); }
-      catch (err) { console.error(`[social] Error for ${alert.guildId}:`, err.message); }
+      catch (err) { console.error(`[social] ${alert.guildId}: ${err.message}`); }
     }
-  } catch (err) { console.error('[social] Tick error:', err.message); }
+  } catch (err) { console.error('[social] Tick:', err.message); }
 }
 
 async function processAlert(alert) {
   const guild = await Guild.findOne({ guildId: alert.guildId });
   if (!guild || !guild.isOperational()) return;
-
   const owner = await User.findById(guild.ownerId);
   if (!owner || !owner.isActive() || !owner.hasPlan()) return;
-
   const bot = getBotForGuild(alert.guildId);
   if (!bot) return;
 
   let modified = false;
-
   for (const channel of alert.channels) {
     if (!channel.enabled) continue;
-
-    const fetcher = FETCHERS[channel.platform];
-    if (!fetcher) continue;
-
-    const data = await fetcher(channel);
+    const data = await FETCHERS[channel.platform]?.(channel);
     if (!data) continue;
 
-    // Save YouTube channel ID if discovered
-    if (data.channelId && !channel.channelId) {
-      channel.channelId = data.channelId;
-      modified = true;
-    }
     if (data.displayName && channel.channelDisplayName !== data.displayName) {
       channel.channelDisplayName = data.displayName;
       modified = true;
     }
 
-    const eventType = data.type;
-    const currentId = data.streamId;
-
-    if (eventType && currentId && currentId !== channel.lastStreamId) {
-      // New event — send notification
+    const { type, streamId } = data;
+    if (type && streamId && streamId !== channel.lastStreamId) {
       await sendNotification(bot, channel, data);
-      channel.isLive         = eventType === 'live';
+      channel.isLive         = type === 'live';
       channel.lastNotifiedAt = new Date();
-      channel.lastStreamId   = currentId;
+      channel.lastStreamId   = streamId;
       modified = true;
-      console.log(`[social] ✅ Sent ${eventType} alert: ${channel.platform}/${channel.channelUsername}`);
-    } else if (!eventType && channel.isLive) {
+      console.log(`[social] ✅ ${channel.platform} ${type}: ${channel.channelUsername}`);
+    } else if (!type && channel.isLive) {
       channel.isLive = false;
       modified = true;
     }
   }
-
   if (modified) await alert.save();
 }
 
@@ -266,33 +228,26 @@ async function sendNotification(bot, channel, data) {
   try {
     const discordCh = await bot.channels.fetch(channel.notifyChannelId);
     if (!discordCh) return;
-
     const platform = PLATFORMS[channel.platform] || PLATFORMS.kick;
     const isVideo  = data.type === 'video';
-
-    const render = (tpl) => (tpl || '')
+    const render   = (tpl) => (tpl || '')
       .replace(/\{streamer\}/g, data.displayName || channel.channelUsername)
-      .replace(/\{title\}/g,    data.title || '')
-      .replace(/\{link\}/g,     data.url)
-      .replace(/\{viewers\}/g,  (data.viewers || 0).toString());
+      .replace(/\{title\}/g,   data.title || '')
+      .replace(/\{link\}/g,    data.url)
+      .replace(/\{viewers\}/g, (data.viewers || 0).toString());
 
     let content = '';
     if (channel.mentionEveryone)    content = '@everyone ';
     else if (channel.mentionRoleId) content = `<@&${channel.mentionRoleId}> `;
-
-    const msgTpl = isVideo
+    content += render(isVideo
       ? (channel.videoMessageTemplate || `🎬 {streamer} نشر فيديو جديد على ${platform.label}! {link}`)
-      : (channel.messageTemplate      || `${platform.emoji} {streamer} الآن مباشر على ${platform.label}! {link}`);
-
-    content += render(msgTpl);
-
-    const titleTpl = isVideo
-      ? (channel.videoEmbedTitle || `🎬 فيديو جديد من {streamer}`)
-      : (channel.embedTitle      || `${platform.emoji} [LIVE] {streamer}`);
+      : (channel.messageTemplate      || `${platform.emoji} {streamer} الآن مباشر على ${platform.label}! {link}`));
 
     const embed = new EmbedBuilder()
       .setColor(channel.embedColor || platform.color)
-      .setTitle(render(titleTpl))
+      .setTitle(render(isVideo
+        ? (channel.videoEmbedTitle || `🎬 فيديو جديد من {streamer}`)
+        : (channel.embedTitle      || `${platform.emoji} [LIVE] {streamer}`)))
       .setURL(data.url)
       .setAuthor({
         name:    `${platform.emoji} ${data.displayName || channel.channelUsername}`,
