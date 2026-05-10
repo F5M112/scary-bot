@@ -57,9 +57,9 @@ export default function DashboardLayout({ children }) {
   const navItems = [
     { href: '/dashboard',              label: t('home'),        icon: LayoutDashboard },
     { href: '/dashboard/tickets',      label: t('tickets'),     icon: Ticket },
-    { href: '/dashboard/giveaway',     label: 'المسابقات',       icon: Gift },
-    { href: '/dashboard/kick',         label: 'Social Media',   icon: Radio },
-    { href: '/dashboard/adhkar',       label: 'الأذكار',         icon: Bookmark },
+    { href: '/dashboard/giveaway',     label: lang === 'ar' ? 'المسابقات' : 'Giveaways', icon: Gift },
+    { href: '/dashboard/kick',         label: lang === 'ar' ? 'تنبيهات السوشل ميديا' : 'Social Alerts', icon: Radio },
+    { href: '/dashboard/adhkar',       label: lang === 'ar' ? 'الأذكار' : 'Adhkar', icon: Bookmark },
     { href: '/dashboard/broadcast',    label: t('broadcast'),   icon: Megaphone },
     { href: '/dashboard/bot',          label: t('botSettings'), icon: Bot, premium: true },
     { href: '/dashboard/subscription', label: t('subscription'),icon: CreditCard },
