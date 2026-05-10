@@ -20,9 +20,11 @@ const watchedChannelSchema = new mongoose.Schema({
   mentionEveryone: { type: Boolean, default: false },
 
   // Message customization
-  messageTemplate: { type: String, default: '🔴 {streamer} الآن مباشر! {link}' },
-  embedColor:      { type: String, default: '#FF0000' },
-  embedTitle:      { type: String, default: '🔴 [LIVE] {streamer}' },
+  messageTemplate:      { type: String, default: '🔴 {streamer} الآن مباشر! {link}' },
+  videoMessageTemplate: { type: String, default: '🎬 {streamer} نشر فيديو جديد! {link}' },
+  embedColor:           { type: String, default: '#FF0000' },
+  embedTitle:           { type: String, default: '🔴 [LIVE] {streamer}' },
+  videoEmbedTitle:      { type: String, default: '🎬 فيديو جديد من {streamer}' },
 
   // State tracking
   isLive:        { type: Boolean, default: false },
