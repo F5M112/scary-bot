@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store';
@@ -21,17 +21,8 @@ export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isRTL = lang === 'ar';
 
-  // Close sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
-  // Close sidebar on ESC key
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') setSidebarOpen(false); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  // Prevent body scroll when sidebar open on mobile
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -76,129 +67,86 @@ export default function DashboardLayout({ children }) {
 
   const initial = (user.displayName || user.username || '?').charAt(0).toUpperCase();
 
-  // Sidebar transform based on state + screen size
-  const sidebarTransform = sidebarOpen
-    ? 'translateX(0)'
-    : isRTL
-      ? 'translateX(100%)'
-      : 'translateX(-100%)';
-
   return (
-    <div className="min-h-screen flex">
+    <div style={{ minHeight: '100vh', display: 'flex' }}>
 
-      {/* ── Sidebar ─────────────────────────────────────── */}
-      <aside
-        style={{
-          position:  'fixed',
-          top:       0,
-          [isRTL ? 'right' : 'left']: 0,
-          height:    '100vh',
-          width:     '256px',
-          zIndex:    40,
-          transform: sidebarTransform,
-          transition:'transform 0.3s ease',
-          display:   'flex',
-          flexDirection: 'column',
-          background: '#0f0f17',
-          borderLeft: isRTL ? 'none' : '1px solid rgba(255,255,255,0.05)',
-          borderRight: isRTL ? '1px solid rgba(255,255,255,0.05)' : 'none',
-        }}
-      >
-        {/* Logo */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Logo size={28} />
-            <span className="font-bold">ST Bot</span>
-          </Link>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="text-white/60 hover:text-white p-1"
-            aria-label="إغلاق القائمة"
-          >
-            <X size={22} />
-          </button>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const active   = pathname === item.href;
-            const isLocked = item.premium && user.plan !== 'premium';
-            return (
-              <Link
-                key={item.href}
-                href={isLocked ? '/dashboard/subscription' : item.href}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
-                  ${active
-                    ? 'bg-brand-600/20 text-brand-300 border border-brand-500/30'
-                    : 'text-white/70 hover:bg-white/5 hover:text-white'}
-                `}
-              >
-                <item.icon size={18} />
-                <span className="flex-1">{item.label}</span>
-                {isLocked && <Crown size={14} className="text-yellow-400" />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User info */}
-        <div className="p-4 border-t border-white/5 space-y-3">
-          <LanguageSwitcher className="w-full justify-center" />
-          <div className="flex items-center gap-3 p-2">
-            <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center font-bold shrink-0">
-              {initial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">{user.displayName || user.username}</div>
-              <div className="text-xs">
-                {user.plan === 'premium'
-                  ? <span className="badge-premium text-[10px] px-2 py-0.5">{t('premium')}</span>
-                  : <span className="text-white/50">{t('classic')}</span>}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            className="btn-secondary w-full flex items-center justify-center gap-2 text-sm py-2"
-          >
-            <LogOut size={14} />
-            {t('logout')}
-          </button>
-        </div>
+      {/* ════ DESKTOP SIDEBAR (always visible on lg+) ════ */}
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-[#0f0f17] border-r border-white/5 sticky top-0 h-screen">
+        <SidebarContent
+          navItems={navItems}
+          pathname={pathname}
+          user={user}
+          t={t}
+          logout={logout}
+          initial={initial}
+          showClose={false}
+          onClose={() => {}}
+        />
       </aside>
 
-      {/* ── Overlay (mobile only) ────────────────────────── */}
+      {/* ════ MOBILE SIDEBAR (overlay, hidden by default) ════ */}
       {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          style={{
-            position:   'fixed',
-            inset:      0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex:     39,
-          }}
-        />
+        <>
+          {/* Overlay */}
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.7)',
+              zIndex: 998,
+            }}
+          />
+          {/* Drawer */}
+          <aside
+            style={{
+              position: 'fixed',
+              top: 0,
+              [isRTL ? 'right' : 'left']: 0,
+              height: '100vh',
+              width: '256px',
+              zIndex: 999,
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#0f0f17',
+              borderLeft: isRTL ? 'none' : '1px solid rgba(255,255,255,0.05)',
+              borderRight: isRTL ? '1px solid rgba(255,255,255,0.05)' : 'none',
+            }}
+          >
+            <SidebarContent
+              navItems={navItems}
+              pathname={pathname}
+              user={user}
+              t={t}
+              logout={logout}
+              initial={initial}
+              showClose={true}
+              onClose={() => setSidebarOpen(false)}
+            />
+          </aside>
+        </>
       )}
 
-      {/* ── Desktop spacer (pushes content right/left of sidebar) */}
-      <div
-        className="hidden lg:block shrink-0"
-        style={{ width: '256px' }}
-      />
-
-      {/* ── Main content ─────────────────────────────────── */}
-      <main className="flex-1 min-w-0">
+      {/* ════ MAIN CONTENT ════ */}
+      <main style={{ flex: 1, minWidth: 0 }}>
         {/* Mobile header */}
         <div
-          className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/5"
-          style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0a0505' }}
+          className="lg:hidden"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            background: '#0a0505',
+            position: 'sticky',
+            top: 0,
+            zIndex: 30,
+          }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-white p-1"
-            aria-label="فتح القائمة"
+            style={{ color: 'white', padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             <Menu size={24} />
           </button>
@@ -211,5 +159,109 @@ export default function DashboardLayout({ children }) {
         </div>
       </main>
     </div>
+  );
+}
+
+// ── Sidebar content (reused for desktop + mobile) ─────────────────
+function SidebarContent({ navItems, pathname, user, t, logout, initial, showClose, onClose }) {
+  return (
+    <>
+      {/* Logo row */}
+      <div style={{
+        padding: '24px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Logo size={28} />
+          <span style={{ fontWeight: 'bold', color: 'white' }}>ST Bot</span>
+        </Link>
+        {showClose && (
+          <button
+            onClick={onClose}
+            style={{
+              color: 'rgba(255,255,255,0.6)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <X size={22} />
+          </button>
+        )}
+      </div>
+
+      {/* Nav links */}
+      <nav style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {navItems.map((item) => {
+          const active   = pathname === item.href;
+          const isLocked = item.premium && user.plan !== 'premium';
+          return (
+            <Link
+              key={item.href}
+              href={isLocked ? '/dashboard/subscription' : item.href}
+              onClick={onClose}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: active ? '#fca5a5' : 'rgba(255,255,255,0.7)',
+                background: active ? 'rgba(220,38,38,0.15)' : 'transparent',
+                border: active ? '1px solid rgba(220,38,38,0.3)' : '1px solid transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              <item.icon size={18} />
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {isLocked && <Crown size={14} style={{ color: '#facc15' }} />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* User info */}
+      <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <LanguageSwitcher className="w-full justify-center" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px' }}>
+          <div style={{
+            width: '36px', height: '36px',
+            borderRadius: '50%',
+            background: '#dc2626',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 'bold', color: 'white', flexShrink: 0,
+          }}>
+            {initial}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '14px', fontWeight: '500', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user.displayName || user.username}
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+              {user.plan === 'premium' ? '⭐ بريميوم' : 'كلاسيك'}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={logout}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.05)', color: 'white', cursor: 'pointer',
+            fontSize: '14px', width: '100%',
+          }}
+        >
+          <LogOut size={14} />
+          {t('logout')}
+        </button>
+      </div>
+    </>
   );
 }
