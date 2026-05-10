@@ -74,7 +74,8 @@ router.post('/:guildId', authenticate, requirePlan, async (req, res) => {
   const guild = await Guild.findOne({ guildId: req.params.guildId, ownerId: req.user._id });
   if (!guild) return res.status(404).json({ error: 'السيرفر غير موجود.' });
 
-  const { platform, channelUsername, notifyChannelId, mentionRoleId, mentionEveryone, messageTemplate, embedColor, embedTitle } = req.body;
+  const { platform, channelUsername, notifyChannelId, mentionRoleId, mentionEveryone,
+    messageTemplate, videoMessageTemplate, embedColor, embedTitle, videoEmbedTitle } = req.body;
 
   if (!platform || !channelUsername || !notifyChannelId) {
     return res.status(400).json({ error: 'المنصة، اسم القناة، وقناة التنبيه مطلوبة.' });
@@ -116,9 +117,11 @@ router.post('/:guildId', authenticate, requirePlan, async (req, res) => {
     notifyChannelId,
     mentionRoleId:      mentionRoleId || undefined,
     mentionEveryone:    !!mentionEveryone,
-    messageTemplate:    messageTemplate || `${platformConfig.emoji || '🔴'} {streamer} الآن مباشر! {link}`,
-    embedColor:         embedColor || platformConfig.color || '#FF0000',
-    embedTitle:         embedTitle || `${platformConfig.emoji || '🔴'} [LIVE] {streamer}`,
+    messageTemplate:      messageTemplate      || `${platformConfig.emoji || '🔴'} {streamer} الآن مباشر! {link}`,
+    videoMessageTemplate: videoMessageTemplate  || `🎬 {streamer} نشر فيديو جديد! {link}`,
+    embedColor:           embedColor            || platformConfig.color || '#FF0000',
+    embedTitle:           embedTitle            || `${platformConfig.emoji || '🔴'} [LIVE] {streamer}`,
+    videoEmbedTitle:      videoEmbedTitle       || `🎬 فيديو جديد من {streamer}`,
     isLive:             channelData.isLive,
     enabled:            true,
   });
