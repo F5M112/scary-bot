@@ -206,3 +206,4 @@ npm run dev
 - **اللوقو:** ST (مدمج في `/public/logo.png`)
 - **اللون الأساسي:** أحمر (#dc2626)
 - **النمط:** Dark mode مع توهج أحمر
+"# scary-store1" 
