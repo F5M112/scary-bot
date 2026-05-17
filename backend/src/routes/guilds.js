@@ -136,4 +136,36 @@ router.delete('/:guildId', authenticate, async (req, res) => {
   res.json({ message: '✅ تم إزالة السيرفر من حسابك.' });
 });
 
+// ── Get Discord Channels ──────────────────────────────────────────
+router.get('/:guildId/channels', authenticate, requirePlan, async (req, res) => {
+  try {
+    const { getBotForGuild } = await import('../bot/botManager.js');
+    const bot = getBotForGuild(req.params.guildId);
+    if (!bot) return res.json({ channels: [] });
+    const discordGuild = await bot.guilds.fetch(req.params.guildId).catch(() => null);
+    if (!discordGuild) return res.json({ channels: [] });
+    await discordGuild.channels.fetch();
+    const channels = discordGuild.channels.cache
+      .filter(c => c.type === 0)
+      .map(c => ({ id: c.id, name: c.name, type: 'text' }));
+    res.json({ channels });
+  } catch { res.json({ channels: [] }); }
+});
+
+// ── Get Discord Roles ─────────────────────────────────────────────
+router.get('/:guildId/roles', authenticate, requirePlan, async (req, res) => {
+  try {
+    const { getBotForGuild } = await import('../bot/botManager.js');
+    const bot = getBotForGuild(req.params.guildId);
+    if (!bot) return res.json({ roles: [] });
+    const discordGuild = await bot.guilds.fetch(req.params.guildId).catch(() => null);
+    if (!discordGuild) return res.json({ roles: [] });
+    await discordGuild.roles.fetch();
+    const roles = discordGuild.roles.cache
+      .filter(r => r.id !== discordGuild.id)
+      .map(r => ({ id: r.id, name: r.name, color: r.hexColor }));
+    res.json({ roles });
+  } catch { res.json({ roles: [] }); }
+});
+
 export default router;
