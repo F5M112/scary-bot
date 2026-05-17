@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }) {
     { href: '/dashboard',              label: t('home'),        icon: LayoutDashboard },
     { href: '/dashboard/tickets',      label: t('tickets'),     icon: Ticket },
     { href: '/dashboard/giveaway',     label: lang === 'ar' ? 'المسابقات' : 'Giveaways', icon: Gift },
-    { href: '/dashboard/kick',         label: lang === 'ar' ? 'تنبيهات السوشل ميديا' : 'Social Alerts', icon: Radio },
+    { href: '/dashboard/welcome',         label: lang === 'ar' ? 'الترحيب' : 'Welcome', icon: Radio },
     { href: '/dashboard/adhkar',       label: lang === 'ar' ? 'الأذكار' : 'Adhkar', icon: Bookmark },
     { href: '/dashboard/broadcast',    label: t('broadcast'),   icon: Megaphone },
     { href: '/dashboard/bot',          label: t('botSettings'), icon: Bot, premium: true },
