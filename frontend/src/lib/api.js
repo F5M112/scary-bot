@@ -71,6 +71,13 @@ export const guildsAPI = {
   updateSettings: (id, data) => api.patch(`/guilds/${id}/settings`, data),
 };
 
+export const welcomeAPI = {
+  get:    (guildId)       => api.get(`/welcome/${guildId}`),
+  save:   (guildId, data) => api.post(`/welcome/${guildId}`, data),
+  test:   (guildId)       => api.post(`/welcome/${guildId}/test`),
+  remove: (guildId)       => api.delete(`/welcome/${guildId}`),
+};
+
 // ── Tickets ──────────────────────────────────────────────────────
 export const ticketsAPI = {
   list:   (guildId, status) => api.get(`/tickets/${guildId}`, { params: { status } }),

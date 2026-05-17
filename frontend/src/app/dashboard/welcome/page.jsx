@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { welcomeAPI, guildsAPI, ticketsAPI } from '@/lib/api';
 import { Save, Send, Trash2, Loader2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '@/lib/api';
 
 const VARS = [
   { var: '{user}',     desc: 'منشن العضو' },
@@ -50,7 +51,7 @@ export default function WelcomePage() {
     setLoading(true);
     Promise.all([
       welcomeAPI.get(guild).catch(() => ({ data: { welcome: null } })),
-      ticketsAPI.channels(guild).catch(() => ({ data: { channels: [] } })),
+      api.get(`/guilds/${guild}/channels`).catch(() => ({ data: { channels: [] } })),
     ]).then(([w, c]) => {
       setForm(w.data.welcome ? { ...DEFAULT, ...w.data.welcome } : DEFAULT);
       setChannels(c.data.channels?.filter(x => x.type === 'text') || []);
