@@ -1,9 +1,9 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
-import { welcomeAPI, guildsAPI, ticketsAPI } from '@/lib/api';
-import { Save, Send, Trash2, Loader2, Eye } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { welcomeAPI, guildsAPI } from '@/lib/api';
 import api from '@/lib/api';
+import { Save, Send, Trash2, Loader2, Eye, Move } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const VARS = [
   { var: '{user}',     desc: 'منشن العضو' },
@@ -16,14 +16,23 @@ const VARS = [
 
 const DEFAULT = {
   enabled: true, channelId: '', sendAsDM: false,
-  message: '【 **WELCOME** 】\n-MEMBER : {user}\n-BY : {inviter}',
-  embedEnabled: false, embedColor: '#dc2626', embedTitle: 'أهلاً وسهلاً! 👋',
+  message: 'مرحباً {user} في سيرفر {server}! 🎉\nأنت العضو رقم {count}\nانضم عبر: {inviter}',
+  embedEnabled: false, embedColor: '#dc2626',
+  embedTitle: 'أهلاً وسهلاً! 👋',
   embedDescription: 'مرحباً {user} في **{server}**!\nأنت العضو رقم **{count}**',
-  embedFooter: 'انضم عبر: {inviter}', embedThumbnail: false, embedImage: false,
+  embedFooter: '', embedThumbnail: false, embedImage: false,
   contentImage: false, trackInvites: true,
-  cardEnabled: false, cardBackground: '', cardShowAvatar: true,
-  cardShowUsername: true, cardShowText: true, cardText: 'welcome to',
-  cardTextColor: '#ffffff', cardPosition: 'before', cardChannelId: '',
+  cardEnabled: false, cardBackground: '',
+  cardShowAvatar: true, cardShowUsername: true,
+  cardShowText: true, cardShowServerName: true, cardShowCount: true,
+  cardText: 'welcome to', cardTextColor: '#ffffff', cardTextSize: 24,
+  cardPosition: 'before', cardChannelId: '',
+  avatarX: 125, avatarY: 125, avatarRadius: 70,
+  avatarBorderColor: '#dc2626',
+  textX: 230, cardTextY: 90,
+  serverNameY: 125, serverNameColor: '#dc2626', serverNameSize: 28,
+  usernameY: 160, usernameColor: '#ffffff', usernameSize: 22,
+  countY: 190, countSize: 16,
 };
 
 const Toggle = ({ value, onChange }) => (
@@ -33,15 +42,27 @@ const Toggle = ({ value, onChange }) => (
   </button>
 );
 
+const Slider = ({ label, value, onChange, min = 0, max = 700 }) => (
+  <div>
+    <div className="flex justify-between text-xs mb-1">
+      <span className="text-white/60">{label}</span>
+      <span className="text-white/80 font-mono">{value}</span>
+    </div>
+    <input type="range" min={min} max={max} value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      className="w-full accent-red-600 cursor-pointer" />
+  </div>
+);
+
 export default function WelcomePage() {
-  const [guilds, setGuilds]       = useState([]);
-  const [guild, setGuild]         = useState('');
-  const [channels, setChannels]   = useState([]);
-  const [form, setForm]           = useState(DEFAULT);
-  const [loading, setLoading]     = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const [testing, setTesting]     = useState(false);
-  const [tab, setTab]             = useState('message');
+  const [guilds, setGuilds]     = useState([]);
+  const [guild, setGuild]       = useState('');
+  const [channels, setChannels] = useState([]);
+  const [form, setForm]         = useState(DEFAULT);
+  const [loading, setLoading]   = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [testing, setTesting]   = useState(false);
+  const [tab, setTab]           = useState('message');
   const canvasRef = useRef(null);
 
   useEffect(() => { guildsAPI.list().then(({ data }) => setGuilds(data.guilds)); }, []);
@@ -54,67 +75,71 @@ export default function WelcomePage() {
       api.get(`/guilds/${guild}/channels`).catch(() => ({ data: { channels: [] } })),
     ]).then(([w, c]) => {
       setForm(w.data.welcome ? { ...DEFAULT, ...w.data.welcome } : DEFAULT);
-      setChannels(c.data.channels?.filter(x => x.type === 'text') || []);
+      setChannels(c.data.channels || []);
     }).finally(() => setLoading(false));
   }, [guild]);
 
-  useEffect(() => {
-    if (!canvasRef.current || !form.cardEnabled || tab !== 'card') return;
-    drawCard();
-  }, [form.cardEnabled, form.cardBackground, form.cardText, form.cardTextColor,
-      form.cardShowAvatar, form.cardShowUsername, form.cardShowText, tab, guild]);
-
-  function drawCard() {
+  const drawCard = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = 700; canvas.height = 250;
+    const W = 700, H = 250;
+    canvas.width = W; canvas.height = H;
 
-    const draw = () => {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(0, 0, 700, 250);
-
+    const doDraw = () => {
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(0, 0, W, H);
+      const ax = form.avatarX, ay = form.avatarY, ar = form.avatarRadius;
       if (form.cardShowAvatar) {
-        ctx.beginPath(); ctx.arc(125, 125, 70, 0, Math.PI*2);
+        ctx.beginPath(); ctx.arc(ax, ay, ar, 0, Math.PI*2);
         ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
-        ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 5; ctx.stroke();
-        ctx.font = '55px serif'; ctx.textAlign = 'center';
-        ctx.fillStyle = '#fff'; ctx.fillText('👤', 125, 148);
+        ctx.strokeStyle = form.avatarBorderColor||'#dc2626';
+        ctx.lineWidth = 5; ctx.stroke();
+        ctx.font = `${ar}px serif`; ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff'; ctx.fillText('👤', ax, ay+ar*0.35);
       }
+      const tx = form.textX;
       if (form.cardShowText && form.cardText) {
-        ctx.font = '24px Arial'; ctx.fillStyle = form.cardTextColor || '#fff';
-        ctx.textAlign = 'left'; ctx.fillText(form.cardText, 230, 95);
+        ctx.font = `${form.cardTextSize||24}px Arial`;
+        ctx.fillStyle = form.cardTextColor||'#fff';
+        ctx.textAlign = 'left'; ctx.fillText(form.cardText, tx, form.cardTextY);
+      }
+      if (form.cardShowServerName) {
+        ctx.font = `bold ${form.serverNameSize||28}px Arial`;
+        ctx.fillStyle = form.serverNameColor||'#dc2626';
+        ctx.textAlign = 'left';
+        ctx.fillText(guilds.find(g=>g.guildId===guild)?.guildName||'Server Name', tx, form.serverNameY);
       }
       if (form.cardShowUsername) {
-        ctx.font = 'bold 34px Arial'; ctx.fillStyle = '#fff';
-        ctx.textAlign = 'left'; ctx.fillText('Username#0000', 230, 148);
+        ctx.font = `${form.usernameSize||22}px Arial`;
+        ctx.fillStyle = form.usernameColor||'#fff';
+        ctx.textAlign = 'left'; ctx.fillText('Username#0000', tx, form.usernameY);
       }
-      const guildName = guilds.find(g => g.guildId === guild)?.guildName || 'Server Name';
-      ctx.font = '17px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.textAlign = 'left'; ctx.fillText(guildName, 230, 185);
+      if (form.cardShowCount) {
+        ctx.font = `${form.countSize||16}px Arial`;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.textAlign = 'left'; ctx.fillText('Member #150', tx, form.countY);
+      }
     };
 
     if (form.cardBackground) {
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
-      img.onload = () => { ctx.drawImage(img, 0, 0, 700, 250); draw(); };
-      img.onerror = () => {
-        const g = ctx.createLinearGradient(0, 0, 700, 250);
-        g.addColorStop(0, '#1a0505'); g.addColorStop(1, '#2d0a0a');
-        ctx.fillStyle = g; ctx.fillRect(0, 0, 700, 250); draw();
-      };
+      img.onload = () => { ctx.drawImage(img,0,0,W,H); doDraw(); };
+      img.onerror = () => { const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#1a0505'); g.addColorStop(1,'#2d0a0a'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); doDraw(); };
       img.src = form.cardBackground;
     } else {
-      const g = ctx.createLinearGradient(0, 0, 700, 250);
-      g.addColorStop(0, '#1a0505'); g.addColorStop(1, '#2d0a0a');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 700, 250); draw();
+      const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#1a0505'); g.addColorStop(1,'#2d0a0a');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H); doDraw();
     }
-  }
+  }, [form, guild, guilds]);
+
+  useEffect(() => { if (form.cardEnabled && tab==='card') drawCard(); }, [form, tab, drawCard]);
 
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const render = (t) => (t||'')
     .replace(/\{user\}/g,'@عضو_جديد').replace(/\{username\}/g,'عضو_جديد')
-    .replace(/\{server\}/g, guilds.find(g=>g.guildId===guild)?.guildName||'السيرفر')
+    .replace(/\{server\}/g,guilds.find(g=>g.guildId===guild)?.guildName||'السيرفر')
     .replace(/\{count\}/g,'١٥٠').replace(/\{inviter\}/g,'أحمد').replace(/\{invite\}/g,'discord.gg/xxxx');
 
   return (
@@ -135,17 +160,15 @@ export default function WelcomePage() {
       {guild && (loading
         ? <div className="flex justify-center py-12"><Loader2 className="animate-spin text-red-500" size={32}/></div>
         : <div className="space-y-4">
-            {/* Enable */}
             <div className="card flex items-center justify-between gap-4">
               <div><div className="font-bold text-lg">تفعيل الترحيب</div><div className="text-sm text-white/50">إرسال رسالة عند انضمام عضو جديد</div></div>
               <Toggle value={form.enabled} onChange={v=>upd('enabled',v)}/>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
               {[['message','💬 الرسالة'],['card','🖼️ صورة الترحيب'],['settings','⚙️ إعدادات']].map(([id,label])=>(
                 <button key={id} onClick={()=>setTab(id)}
-                  className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${tab===id?'bg-[#1a1a2e] text-white shadow':'text-white/40 hover:text-white'}`}>
+                  className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${tab===id?'bg-[#1a1a2e] text-white':'text-white/40 hover:text-white'}`}>
                   {label}
                 </button>
               ))}
@@ -153,18 +176,12 @@ export default function WelcomePage() {
 
             <div className="grid lg:grid-cols-2 gap-6">
               <div className="space-y-4">
-
-                {/* MESSAGE TAB */}
                 {tab==='message' && <>
                   <div className="card space-y-3">
                     <label className="font-bold">وجهة الإرسال</label>
                     <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer text-sm">
-                        <input type="radio" checked={!form.sendAsDM} onChange={()=>upd('sendAsDM',false)}/> إرسال لقناة
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-sm">
-                        <input type="radio" checked={form.sendAsDM} onChange={()=>upd('sendAsDM',true)}/> إرسال كـ DM
-                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm"><input type="radio" checked={!form.sendAsDM} onChange={()=>upd('sendAsDM',false)}/> إرسال لقناة</label>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm"><input type="radio" checked={form.sendAsDM} onChange={()=>upd('sendAsDM',true)}/> إرسال كـ DM</label>
                     </div>
                     {!form.sendAsDM && (
                       <select value={form.channelId} onChange={e=>upd('channelId',e.target.value)} className="input">
@@ -173,31 +190,22 @@ export default function WelcomePage() {
                       </select>
                     )}
                   </div>
-
                   <div className="card">
                     <label className="block text-sm font-medium mb-2">نص الرسالة</label>
                     <textarea value={form.message} onChange={e=>upd('message',e.target.value)} rows={4} className="input resize-none font-mono text-sm"/>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {VARS.map(v=>(
                         <button key={v.var} onClick={()=>upd('message',form.message+v.var)}
-                          className="text-xs bg-black/30 px-2 py-1 rounded text-red-300 hover:bg-black/50 transition font-mono">
-                          {v.var}
-                        </button>
+                          className="text-xs bg-black/30 px-2 py-1 rounded text-red-300 hover:bg-black/50 transition font-mono">{v.var}</button>
                       ))}
                     </div>
                   </div>
-
                   <div className="card space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="font-bold">Embed</label>
-                      <Toggle value={form.embedEnabled} onChange={v=>upd('embedEnabled',v)}/>
-                    </div>
+                    <div className="flex items-center justify-between"><label className="font-bold">Embed</label><Toggle value={form.embedEnabled} onChange={v=>upd('embedEnabled',v)}/></div>
                     {form.embedEnabled && <>
                       <div className="flex gap-2 flex-wrap">
                         {['#dc2626','#5865F2','#23A55A','#FFD700','#9146FF'].map(c=>(
-                          <button key={c} onClick={()=>upd('embedColor',c)}
-                            className={`w-7 h-7 rounded-full border-4 transition ${form.embedColor===c?'border-white':'border-transparent'}`}
-                            style={{backgroundColor:c}}/>
+                          <button key={c} onClick={()=>upd('embedColor',c)} className={`w-7 h-7 rounded-full border-4 transition ${form.embedColor===c?'border-white':'border-transparent'}`} style={{backgroundColor:c}}/>
                         ))}
                         <input type="color" value={form.embedColor} onChange={e=>upd('embedColor',e.target.value)} className="w-7 h-7 rounded cursor-pointer bg-transparent border-0"/>
                       </div>
@@ -212,49 +220,56 @@ export default function WelcomePage() {
                   </div>
                 </>}
 
-                {/* CARD TAB */}
                 {tab==='card' && <>
                   <div className="card flex items-center justify-between gap-4">
                     <div><div className="font-bold">تفعيل صورة الترحيب</div><div className="text-sm text-white/50">صورة مخصصة مثل ProBot</div></div>
                     <Toggle value={form.cardEnabled} onChange={v=>upd('cardEnabled',v)}/>
                   </div>
-
                   {form.cardEnabled && <>
                     <div className="card space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">🖼️ رابط صورة الخلفية</label>
-                        <input value={form.cardBackground} onChange={e=>upd('cardBackground',e.target.value)} placeholder="https://example.com/bg.png" className="input"/>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">✏️ النص الرئيسي</label>
-                        <input value={form.cardText} onChange={e=>upd('cardText',e.target.value)} placeholder="welcome to" className="input"/>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5">🎨 لون النص</label>
-                        <div className="flex gap-2">
-                          {['#ffffff','#dc2626','#FFD700','#23A55A','#5865F2'].map(c=>(
-                            <button key={c} onClick={()=>upd('cardTextColor',c)}
-                              className={`w-7 h-7 rounded-full border-4 transition ${form.cardTextColor===c?'border-white':'border-transparent'}`}
-                              style={{backgroundColor:c}}/>
-                          ))}
-                          <input type="color" value={form.cardTextColor} onChange={e=>upd('cardTextColor',e.target.value)} className="w-7 h-7 rounded cursor-pointer bg-transparent border-0"/>
-                        </div>
-                      </div>
+                      <div><label className="block text-sm font-medium mb-1.5">🖼️ رابط صورة الخلفية</label><input value={form.cardBackground} onChange={e=>upd('cardBackground',e.target.value)} placeholder="https://example.com/bg.png" className="input"/></div>
+                      <div><label className="block text-sm font-medium mb-1.5">✏️ النص الرئيسي</label><input value={form.cardText} onChange={e=>upd('cardText',e.target.value)} className="input"/></div>
                       <div className="space-y-2">
                         <label className="block text-sm font-medium">عناصر الصورة</label>
-                        {[['cardShowAvatar','👤 صورة بروفايل العضو'],['cardShowUsername','📛 اسم العضو'],['cardShowText','✏️ النص الرئيسي']].map(([k,l])=>(
-                          <div key={k} className="flex items-center justify-between p-2.5 bg-white/5 rounded-lg">
-                            <span className="text-sm">{l}</span>
-                            <Toggle value={form[k]} onChange={v=>upd(k,v)}/>
-                          </div>
+                        {[['cardShowAvatar','👤 صورة البروفايل'],['cardShowUsername','📛 اسم العضو'],['cardShowText','✏️ النص الرئيسي'],['cardShowServerName','🏠 اسم السيرفر'],['cardShowCount','🔢 رقم العضو']].map(([k,l])=>(
+                          <div key={k} className="flex items-center justify-between p-2 bg-white/5 rounded-lg"><span className="text-sm">{l}</span><Toggle value={form[k]} onChange={v=>upd(k,v)}/></div>
                         ))}
+                      </div>
+                      <div className="border-t border-white/10 pt-4 space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-bold text-white/80"><Move size={14}/> موضع صورة البروفايل</div>
+                        <Slider label="موضع X (أفقي)" value={form.avatarX} onChange={v=>upd('avatarX',v)} min={50} max={650}/>
+                        <Slider label="موضع Y (عمودي)" value={form.avatarY} onChange={v=>upd('avatarY',v)} min={50} max={200}/>
+                        <Slider label="حجم الصورة" value={form.avatarRadius} onChange={v=>upd('avatarRadius',v)} min={30} max={110}/>
+                        <div>
+                          <label className="block text-xs text-white/60 mb-1.5">لون حدود الصورة</label>
+                          <div className="flex gap-2">
+                            {['#dc2626','#5865F2','#23A55A','#FFD700','#ffffff'].map(c=>(
+                              <button key={c} onClick={()=>upd('avatarBorderColor',c)} className={`w-6 h-6 rounded-full border-2 transition ${form.avatarBorderColor===c?'border-white scale-110':'border-transparent'}`} style={{backgroundColor:c}}/>
+                            ))}
+                            <input type="color" value={form.avatarBorderColor} onChange={e=>upd('avatarBorderColor',e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"/>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="border-t border-white/10 pt-4 space-y-3">
+                        <div className="text-sm font-bold text-white/80">📝 موضع النصوص</div>
+                        <Slider label="موضع X للنصوص" value={form.textX} onChange={v=>upd('textX',v)} min={50} max={650}/>
+                        <Slider label="النص الرئيسي Y" value={form.cardTextY} onChange={v=>upd('cardTextY',v)} min={20} max={230}/>
+                        <Slider label="اسم السيرفر Y" value={form.serverNameY} onChange={v=>upd('serverNameY',v)} min={20} max={230}/>
+                        <Slider label="اسم العضو Y" value={form.usernameY} onChange={v=>upd('usernameY',v)} min={20} max={230}/>
+                        <Slider label="رقم العضو Y" value={form.countY} onChange={v=>upd('countY',v)} min={20} max={230}/>
+                      </div>
+                      <div className="border-t border-white/10 pt-4 space-y-3">
+                        <div className="text-sm font-bold text-white/80">🎨 ألوان النصوص</div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div><label className="block text-xs text-white/60 mb-1">النص الرئيسي</label><input type="color" value={form.cardTextColor} onChange={e=>upd('cardTextColor',e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0"/></div>
+                          <div><label className="block text-xs text-white/60 mb-1">اسم السيرفر</label><input type="color" value={form.serverNameColor} onChange={e=>upd('serverNameColor',e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0"/></div>
+                          <div><label className="block text-xs text-white/60 mb-1">اسم العضو</label><input type="color" value={form.usernameColor} onChange={e=>upd('usernameColor',e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0"/></div>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">موضع الصورة</label>
-                        {[['before','قبل الرسالة النصية'],['with','مع الرسالة النصية'],['channel','في قناة منفصلة']].map(([v,l])=>(
-                          <label key={v} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 text-sm">
-                            <input type="radio" checked={form.cardPosition===v} onChange={()=>upd('cardPosition',v)}/> {l}
-                          </label>
+                        {[['before','قبل الرسالة'],['with','مع الرسالة'],['channel','قناة منفصلة']].map(([v,l])=>(
+                          <label key={v} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 text-sm"><input type="radio" checked={form.cardPosition===v} onChange={()=>upd('cardPosition',v)}/> {l}</label>
                         ))}
                         {form.cardPosition==='channel' && (
                           <select value={form.cardChannelId} onChange={e=>upd('cardChannelId',e.target.value)} className="input mt-2">
@@ -267,7 +282,6 @@ export default function WelcomePage() {
                   </>}
                 </>}
 
-                {/* SETTINGS TAB */}
                 {tab==='settings' && <>
                   <div className="card flex items-center justify-between gap-4">
                     <div><div className="font-bold">🔗 تتبع الدعوات</div><div className="text-sm text-white/50">معرفة من أرسل الرابط للعضو</div></div>
@@ -279,7 +293,6 @@ export default function WelcomePage() {
                   </div>
                 </>}
 
-                {/* Actions */}
                 <div className="flex gap-3">
                   <button onClick={async()=>{if(!form.channelId&&!form.sendAsDM)return toast.error('اختر قناة');setSaving(true);try{await welcomeAPI.save(guild,form);toast.success('✅ تم الحفظ');}catch(e){toast.error(e.response?.data?.error||'فشل');}finally{setSaving(false);}}} disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2 py-2.5">
                     {saving?<Loader2 className="animate-spin" size={16}/>:<Save size={16}/>} حفظ
@@ -291,25 +304,22 @@ export default function WelcomePage() {
                 </div>
               </div>
 
-              {/* Preview */}
               <div className="space-y-3">
-                <h3 className="font-bold flex items-center gap-2"><Eye size={16}/> معاينة</h3>
-
+                <h3 className="font-bold flex items-center gap-2"><Eye size={16}/> معاينة مباشرة</h3>
                 {tab==='card' && form.cardEnabled && (
                   <div>
                     <canvas ref={canvasRef} className="w-full rounded-xl border border-white/10"/>
-                    <p className="text-xs text-white/40 mt-1.5 text-center">معاينة تقريبية</p>
+                    <p className="text-xs text-white/40 mt-1 text-center">تتحدث المعاينة تلقائياً</p>
                   </div>
                 )}
-
                 {tab==='message' && (
                   <div className="bg-[#313338] rounded-xl p-4 text-white text-sm" dir="ltr">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 bg-red-600/30 rounded-full flex items-center justify-center text-xs">🤖</div>
+                      <div className="w-8 h-8 bg-red-600/30 rounded-full flex items-center justify-center">🤖</div>
                       <span className="font-bold text-xs">ST Bot</span>
                       <span className="text-white/30 text-xs">اليوم</span>
                     </div>
-                    {form.message && <p className="text-white/90 whitespace-pre-wrap text-sm mb-2">{render(form.message)}</p>}
+                    {form.message && <p className="whitespace-pre-wrap text-sm mb-2 text-white/90">{render(form.message)}</p>}
                     {form.embedEnabled && (
                       <div className="rounded-lg overflow-hidden" style={{borderLeft:`4px solid ${form.embedColor}`}}>
                         <div className="bg-[#2B2D31] p-3">
@@ -327,11 +337,7 @@ export default function WelcomePage() {
                     )}
                   </div>
                 )}
-
-                {tab==='settings' && (
-                  <div className="card text-center text-white/30 py-8 text-sm">إعدادات إضافية للترحيب</div>
-                )}
-
+                {tab==='settings' && <div className="card text-center text-white/30 py-8 text-sm">إعدادات إضافية للترحيب</div>}
                 <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-200/80">
                   💡 صورة بروفايل العضو الحقيقية ستظهر تلقائياً عند انضمامه
                 </div>
