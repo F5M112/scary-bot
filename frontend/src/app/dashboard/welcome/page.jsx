@@ -55,6 +55,13 @@ const Slider = ({ label, value, onChange, min = 0, max = 700 }) => (
   </div>
 );
 
+const Section = ({ title, children }) => (
+  <div className="border border-white/10 rounded-lg p-3 space-y-3">
+    <div className="text-sm font-bold text-white/80">{title}</div>
+    {children}
+  </div>
+);
+
 export default function WelcomePage() {
   const [guilds, setGuilds]     = useState([]);
   const [guild, setGuild]       = useState('');
@@ -91,10 +98,8 @@ export default function WelcomePage() {
     const doDraw = () => {
       ctx.fillStyle = 'rgba(0,0,0,0.45)';
       ctx.fillRect(0, 0, W, H);
-
       const ax = form.avatarX, ay = form.avatarY, ar = form.avatarRadius;
       const bw = form.avatarBorderWidth || 5;
-
       if (form.cardShowAvatar) {
         ctx.beginPath(); ctx.arc(ax, ay, ar, 0, Math.PI*2);
         ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
@@ -103,7 +108,6 @@ export default function WelcomePage() {
         ctx.font = `${ar}px serif`; ctx.textAlign = 'center';
         ctx.fillStyle = '#fff'; ctx.fillText('👤', ax, ay + ar * 0.35);
       }
-
       const tx = form.textX;
       if (form.cardShowText && form.cardText) {
         ctx.font = `${form.cardTextSize || 24}px Arial`;
@@ -258,104 +262,101 @@ export default function WelcomePage() {
                     <Toggle value={form.cardEnabled} onChange={v => upd('cardEnabled', v)} />
                   </div>
 
-                  {form.cardEnabled && <div className="card space-y-5">
-                    <div><label className="block text-sm font-medium mb-1.5">🖼️ رابط صورة الخلفية</label>
-                      <input value={form.cardBackground} onChange={e => upd('cardBackground', e.target.value)} placeholder="https://example.com/bg.png" className="input" /></div>
-
-                    <div><label className="block text-sm font-medium mb-1.5">✏️ النص الرئيسي</label>
-                      <input value={form.cardText} onChange={e => upd('cardText', e.target.value)} className="input" /></div>
-
-                    {/* Card Dimensions */}
-                    <div className="border border-white/10 rounded-lg p-3 space-y-3">
-                    <div className="text-sm font-bold text-white/80">🔤 أحجام النصوص</div>
-                      <Slider label="حجم النص الرئيسي" value={form.cardTextSize} onChange={v=>upd('cardTextSize',v)} min={10} max={60}/>
-                      <Slider label="حجم اسم السيرفر" value={form.serverNameSize} onChange={v=>upd('serverNameSize',v)} min={10} max={60}/>
-                      <Slider label="حجم اسم العضو" value={form.usernameSize} onChange={v=>upd('usernameSize',v)} min={10} max={60}/>
-                      <Slider label="حجم رقم العضو" value={form.countSize} onChange={v=>upd('countSize',v)} min={10} max={40}/>
-                    </div>
-                      <div className="text-sm font-bold text-white/80">📐 أبعاد الصورة</div>
-                      <Slider label="العرض (Width)" value={form.cardWidth} onChange={v => upd('cardWidth', v)} min={400} max={1200} />
-                      <Slider label="الارتفاع (Height)" value={form.cardHeight} onChange={v => upd('cardHeight', v)} min={100} max={500} />
-                    </div>
-
-                    {/* Elements toggle */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium">عناصر الصورة</label>
-                      {[
-                        ['cardShowAvatar', '👤 صورة البروفايل'],
-                        ['cardShowUsername', '📛 اسم العضو'],
-                        ['cardShowText', '✏️ النص الرئيسي'],
-                        ['cardShowServerName', '🏠 اسم السيرفر'],
-                        ['cardShowCount', '🔢 رقم العضو'],
-                      ].map(([k, l]) => (
-                        <div key={k} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-                          <span className="text-sm">{l}</span>
-                          <Toggle value={form[k]} onChange={v => upd(k, v)} />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Avatar position */}
-                    <div className="border border-white/10 rounded-lg p-3 space-y-3">
-                      <div className="flex items-center gap-2 text-sm font-bold text-white/80"><Move size={14} /> موضع صورة البروفايل</div>
-                      <Slider label="موضع X (أفقي)" value={form.avatarX} onChange={v => upd('avatarX', v)} min={50} max={form.cardWidth - 50} />
-                      <Slider label="موضع Y (عمودي)" value={form.avatarY} onChange={v => upd('avatarY', v)} min={50} max={form.cardHeight - 50} />
-                      <Slider label="حجم الصورة" value={form.avatarRadius} onChange={v => upd('avatarRadius', v)} min={20} max={120} />
-                      <Slider label="سمك الحدود" value={form.avatarBorderWidth} onChange={v => upd('avatarBorderWidth', v)} min={0} max={20} />
+                  {form.cardEnabled && (
+                    <div className="card space-y-5">
                       <div>
-                        <label className="block text-xs text-white/60 mb-1.5">لون الحدود</label>
-                        <div className="flex gap-2">
-                          {['#dc2626', '#5865F2', '#23A55A', '#FFD700', '#ffffff'].map(c => (
-                            <button key={c} onClick={() => upd('avatarBorderColor', c)} className={`w-6 h-6 rounded-full border-2 transition ${form.avatarBorderColor === c ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: c }} />
-                          ))}
-                          <input type="color" value={form.avatarBorderColor} onChange={e => upd('avatarBorderColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
-                        </div>
+                        <label className="block text-sm font-medium mb-1.5">🖼️ رابط صورة الخلفية</label>
+                        <input value={form.cardBackground} onChange={e => upd('cardBackground', e.target.value)} placeholder="https://example.com/bg.png" className="input" />
                       </div>
-                    </div>
 
-                    {/* Text positions */}
-                    <div className="border border-white/10 rounded-lg p-3 space-y-3">
-                      <div className="text-sm font-bold text-white/80">📝 مواضع النصوص</div>
-                      <Slider label="موضع X للنصوص" value={form.textX} onChange={v => upd('textX', v)} min={50} max={form.cardWidth - 50} />
-                      <Slider label="النص الرئيسي Y" value={form.cardTextY} onChange={v => upd('cardTextY', v)} min={20} max={form.cardHeight - 10} />
-                      <Slider label="اسم السيرفر Y" value={form.serverNameY} onChange={v => upd('serverNameY', v)} min={20} max={form.cardHeight - 10} />
-                      <Slider label="اسم العضو Y" value={form.usernameY} onChange={v => upd('usernameY', v)} min={20} max={form.cardHeight - 10} />
-                      <Slider label="رقم العضو Y" value={form.countY} onChange={v => upd('countY', v)} min={20} max={form.cardHeight - 10} />
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5">✏️ النص الرئيسي</label>
+                        <input value={form.cardText} onChange={e => upd('cardText', e.target.value)} className="input" />
+                      </div>
 
-                    {/* Text colors */}
-                    <div className="border border-white/10 rounded-lg p-3 space-y-3">
-                      <div className="text-sm font-bold text-white/80">🎨 ألوان النصوص</div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <Section title="📐 أبعاد الصورة">
+                        <Slider label="العرض (Width)" value={form.cardWidth} onChange={v => upd('cardWidth', v)} min={400} max={1200} />
+                        <Slider label="الارتفاع (Height)" value={form.cardHeight} onChange={v => upd('cardHeight', v)} min={100} max={500} />
+                      </Section>
+
+                      <Section title="🔤 أحجام النصوص">
+                        <Slider label="حجم النص الرئيسي" value={form.cardTextSize} onChange={v => upd('cardTextSize', v)} min={10} max={60} />
+                        <Slider label="حجم اسم السيرفر" value={form.serverNameSize} onChange={v => upd('serverNameSize', v)} min={10} max={60} />
+                        <Slider label="حجم اسم العضو" value={form.usernameSize} onChange={v => upd('usernameSize', v)} min={10} max={60} />
+                        <Slider label="حجم رقم العضو" value={form.countSize} onChange={v => upd('countSize', v)} min={10} max={40} />
+                      </Section>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium">عناصر الصورة</label>
                         {[
-                          ['cardTextColor', 'النص الرئيسي'],
-                          ['serverNameColor', 'اسم السيرفر'],
-                          ['usernameColor', 'اسم العضو'],
+                          ['cardShowAvatar',     '👤 صورة البروفايل'],
+                          ['cardShowUsername',   '📛 اسم العضو'],
+                          ['cardShowText',       '✏️ النص الرئيسي'],
+                          ['cardShowServerName', '🏠 اسم السيرفر'],
+                          ['cardShowCount',      '🔢 رقم العضو'],
                         ].map(([k, l]) => (
-                          <div key={k}>
-                            <label className="block text-xs text-white/60 mb-1">{l}</label>
-                            <input type="color" value={form[k]} onChange={e => upd(k, e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                          <div key={k} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                            <span className="text-sm">{l}</span>
+                            <Toggle value={form[k]} onChange={v => upd(k, v)} />
                           </div>
                         ))}
                       </div>
-                    </div>
 
-                    {/* Card position */}
-                    <div>
-                      <label className="block text-sm font-medium mb-2">موضع الصورة</label>
-                      {[['before', 'قبل الرسالة'], ['with', 'مع الرسالة'], ['channel', 'قناة منفصلة']].map(([v, l]) => (
-                        <label key={v} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 text-sm">
-                          <input type="radio" checked={form.cardPosition === v} onChange={() => upd('cardPosition', v)} /> {l}
-                        </label>
-                      ))}
-                      {form.cardPosition === 'channel' && (
-                        <select value={form.cardChannelId} onChange={e => upd('cardChannelId', e.target.value)} className="input mt-2">
-                          <option value="">— اختر قناة —</option>
-                          {channels.map(c => <option key={c.id} value={c.id}># {c.name}</option>)}
-                        </select>
-                      )}
+                      <Section title="👤 موضع صورة البروفايل">
+                        <Slider label="موضع X (أفقي)" value={form.avatarX} onChange={v => upd('avatarX', v)} min={50} max={form.cardWidth - 50} />
+                        <Slider label="موضع Y (عمودي)" value={form.avatarY} onChange={v => upd('avatarY', v)} min={50} max={form.cardHeight - 50} />
+                        <Slider label="حجم الصورة" value={form.avatarRadius} onChange={v => upd('avatarRadius', v)} min={20} max={120} />
+                        <Slider label="سمك الحدود" value={form.avatarBorderWidth} onChange={v => upd('avatarBorderWidth', v)} min={0} max={20} />
+                        <div>
+                          <label className="block text-xs text-white/60 mb-1.5">لون الحدود</label>
+                          <div className="flex gap-2">
+                            {['#dc2626', '#5865F2', '#23A55A', '#FFD700', '#ffffff'].map(c => (
+                              <button key={c} onClick={() => upd('avatarBorderColor', c)} className={`w-6 h-6 rounded-full border-2 transition ${form.avatarBorderColor === c ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                            ))}
+                            <input type="color" value={form.avatarBorderColor} onChange={e => upd('avatarBorderColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                          </div>
+                        </div>
+                      </Section>
+
+                      <Section title="📝 مواضع النصوص">
+                        <Slider label="موضع X للنصوص" value={form.textX} onChange={v => upd('textX', v)} min={50} max={form.cardWidth - 50} />
+                        <Slider label="النص الرئيسي Y" value={form.cardTextY} onChange={v => upd('cardTextY', v)} min={20} max={form.cardHeight - 10} />
+                        <Slider label="اسم السيرفر Y" value={form.serverNameY} onChange={v => upd('serverNameY', v)} min={20} max={form.cardHeight - 10} />
+                        <Slider label="اسم العضو Y" value={form.usernameY} onChange={v => upd('usernameY', v)} min={20} max={form.cardHeight - 10} />
+                        <Slider label="رقم العضو Y" value={form.countY} onChange={v => upd('countY', v)} min={20} max={form.cardHeight - 10} />
+                      </Section>
+
+                      <Section title="🎨 ألوان النصوص">
+                        <div className="grid grid-cols-3 gap-3">
+                          {[
+                            ['cardTextColor',   'النص الرئيسي'],
+                            ['serverNameColor', 'اسم السيرفر'],
+                            ['usernameColor',   'اسم العضو'],
+                          ].map(([k, l]) => (
+                            <div key={k}>
+                              <label className="block text-xs text-white/60 mb-1">{l}</label>
+                              <input type="color" value={form[k]} onChange={e => upd(k, e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                            </div>
+                          ))}
+                        </div>
+                      </Section>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">موضع الصورة</label>
+                        {[['before', 'قبل الرسالة'], ['with', 'مع الرسالة'], ['channel', 'قناة منفصلة']].map(([v, l]) => (
+                          <label key={v} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 text-sm">
+                            <input type="radio" checked={form.cardPosition === v} onChange={() => upd('cardPosition', v)} /> {l}
+                          </label>
+                        ))}
+                        {form.cardPosition === 'channel' && (
+                          <select value={form.cardChannelId} onChange={e => upd('cardChannelId', e.target.value)} className="input mt-2">
+                            <option value="">— اختر قناة —</option>
+                            {channels.map(c => <option key={c.id} value={c.id}># {c.name}</option>)}
+                          </select>
+                        )}
+                      </div>
                     </div>
-                  </div>}
+                  )}
                 </>}
 
                 {/* SETTINGS TAB */}
@@ -370,7 +371,6 @@ export default function WelcomePage() {
                   </div>
                 </>}
 
-                {/* Actions */}
                 <div className="flex gap-3">
                   <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2 py-2.5">
                     {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} حفظ
@@ -378,13 +378,15 @@ export default function WelcomePage() {
                   <button onClick={handleTest} disabled={testing} className="btn-secondary flex items-center gap-2 px-4">
                     {testing ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />} تجربة
                   </button>
-                  <button onClick={async () => { if (!confirm('حذف؟')) return; await welcomeAPI.remove(guild); toast.success('تم الحذف'); setForm(DEFAULT); }} className="btn-danger p-2.5"><Trash2 size={16} /></button>
+                  <button onClick={async () => { if (!confirm('حذف؟')) return; await welcomeAPI.remove(guild); toast.success('تم الحذف'); setForm(DEFAULT); }} className="btn-danger p-2.5">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
 
-              {/* Preview */}
+              {/* Preview - Sticky */}
               <div className="space-y-3 lg:sticky lg:top-24 lg:self-start">
-                 <h3 className="font-bold flex items-center gap-2"><Eye size={16}/> معاينة مباشرة</h3>
+                <h3 className="font-bold flex items-center gap-2"><Eye size={16} /> معاينة مباشرة</h3>
 
                 {tab === 'card' && form.cardEnabled && (
                   <div>
