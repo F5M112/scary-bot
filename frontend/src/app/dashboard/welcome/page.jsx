@@ -267,6 +267,12 @@ export default function WelcomePage() {
 
                     {/* Card Dimensions */}
                     <div className="border border-white/10 rounded-lg p-3 space-y-3">
+                    <div className="text-sm font-bold text-white/80">🔤 أحجام النصوص</div>
+                      <Slider label="حجم النص الرئيسي" value={form.cardTextSize} onChange={v=>upd('cardTextSize',v)} min={10} max={60}/>
+                      <Slider label="حجم اسم السيرفر" value={form.serverNameSize} onChange={v=>upd('serverNameSize',v)} min={10} max={60}/>
+                      <Slider label="حجم اسم العضو" value={form.usernameSize} onChange={v=>upd('usernameSize',v)} min={10} max={60}/>
+                      <Slider label="حجم رقم العضو" value={form.countSize} onChange={v=>upd('countSize',v)} min={10} max={40}/>
+                    </div>
                       <div className="text-sm font-bold text-white/80">📐 أبعاد الصورة</div>
                       <Slider label="العرض (Width)" value={form.cardWidth} onChange={v => upd('cardWidth', v)} min={400} max={1200} />
                       <Slider label="الارتفاع (Height)" value={form.cardHeight} onChange={v => upd('cardHeight', v)} min={100} max={500} />
