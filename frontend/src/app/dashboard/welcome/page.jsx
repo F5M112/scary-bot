@@ -377,8 +377,8 @@ export default function WelcomePage() {
               </div>
 
               {/* Preview */}
-              <div className="space-y-3">
-                <h3 className="font-bold flex items-center gap-2"><Eye size={16} /> معاينة مباشرة</h3>
+              <div className="space-y-3 lg:sticky lg:top-24 lg:self-start">
+                 <h3 className="font-bold flex items-center gap-2"><Eye size={16}/> معاينة مباشرة</h3>
 
                 {tab === 'card' && form.cardEnabled && (
                   <div>
