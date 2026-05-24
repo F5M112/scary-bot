@@ -78,7 +78,7 @@ export default function BotSettingsPage() {
           onChange={(e) => setSelectedGuild(e.target.value)}
           className="input"
         >
-          <option value="">— اختر سيرفراً —</option>
+          <option value="">— {t('selectServer')} —</option>
           {guilds.map(g => (
             <option key={g.guildId} value={g.guildId}>{g.guildName}</option>
           ))}
