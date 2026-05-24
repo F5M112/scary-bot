@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 export default function BotSettingsPage() {
   const { user } = useAuthStore();
   const [guilds, setGuilds] = useState([]);
+  const t = useT();
   const [selectedGuild, setSelectedGuild] = useState('');
   const [token, setToken] = useState('');
   const [showToken, setShowToken] = useState(false);
