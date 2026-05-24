@@ -129,24 +129,24 @@ export default function HomePage() {
           <div className="card hover:border-brand-500/30 transition">
             <div className="badge-classic inline-block mb-4">{t('classic')}</div>
             <div className="mb-5">
-              <span className="text-4xl font-black">$5</span>
+              <span className="text-4xl font-black">$10</span>
               <span className="text-white/50">{t('perMonth')}</span>
             </div>
             <ul className="space-y-2 mb-8">
               {(lang === 'ar' ? [
-                '🎫 نظام التذاكر الكامل',
-                '🎉 مسابقة واحدة ',
-                '📡 قناة Kick واحدة فقط',
-                '📿 الأذكار التلقائية',
-                '📢 الإذاعة الشاملة (لكل الأعضاء)',
-                '🤖 البوت الرئيسي',
+                'نظام التذاكر الكامل',
+                'مسابقة واحدة ',
+                'الأذكار التلقائية',
+				'نظام الترحيب',
+                'الإذاعة الشاملة (لكل الأعضاء)',
+                'البوت الرئيسي',
               ] : [
-                '🎫 Full Ticket System',
-                '🎉 One giveaway',
-                '📡 One Kick channel only',
-                '📿 Auto Islamic Reminders',
-                '📢 Global Broadcast',
-                '🤖 Platform Bot',
+                'Full Ticket System',
+                'One giveaway',
+                'Wealcome system',
+                'Auto Islamic Reminders',
+                'Global Broadcast',
+                'Platform Bot',
               ]).map((f, i) => (
                 <li key={i} className="flex items-center gap-2 text-sm">
                   <Check className="text-green-400 shrink-0" size={16} />
@@ -164,24 +164,20 @@ export default function HomePage() {
             </div>
             <div className="text-brand-400 font-bold mb-4">{t('premium')}</div>
             <div className="mb-5">
-              <span className="text-4xl font-black">$15</span>
+              <span className="text-4xl font-black">$25</span>
               <span className="text-white/50">{t('perMonth')}</span>
             </div>
             <ul className="space-y-2 mb-8">
               {(lang === 'ar' ? [
-                ['✅ كل مميزات الكلاسيك', true],
-                ['🎉 مسابقات لا محدودة', true],
-                ['📡 YouTube / Twitch / TikTok / Kick', true],
-                ['📡 إضافة أكثر من قناة', true],
-                ['📢 الإذاعة المستهدفة بمعرفات', true],
-                ['🤖 بوت مخصص (توكن خاص)', true],
+                ['كل مميزات الكلاسيك', true],
+                ['مسابقات لا محدودة', true],
+                ['الإذاعة المستهدفة بمعرفات', true],
+                ['بوت مخصص (توكن خاص)', true],
               ] : [
-                ['✅ All Classic Features', true],
-                ['🎉 Unlimited Giveaways', true],
-                ['📡 YouTube / Twitch / TikTok / Kick', true],
-                ['📡 Multiple channels', true],
-                ['📢 Targeted Broadcast by IDs', true],
-                ['🤖 Custom Bot (own token)', true],
+                ['All Classic Features', true],
+                ['Unlimited Giveaways', true],
+                ['Targeted Broadcast by IDs', true],
+                ['Custom Bot (own token)', true],
               ]).map(([f, highlight], i) => (
                 <li key={i} className="flex items-center gap-2 text-sm">
                   <Check className="text-brand-400 shrink-0" size={16} />
