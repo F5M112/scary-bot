@@ -4,7 +4,7 @@ import DirHandler from '@/components/DirHandler';
 
 export const metadata = {
   title: 'ST Bot | بوت ديسكورد متكامل',
-  description: 'منصة SaaS عربية شاملة تضم نظام تذاكر، مسابقات، أذكار، Kick Live، وإذاعة جماعية',
+  description: 'منصة SaaS عربية شاملة تضم نظام تذاكر، مسابقات، أذكار، وإذاعة جماعية',
   icons: {
     icon: '/logo.png',
     apple: '/logo.png',
