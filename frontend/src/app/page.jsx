@@ -143,7 +143,7 @@ export default function HomePage() {
               ] : [
                 'Full Ticket System',
                 'One giveaway',
-                'Wealcome system',
+                'Welcome system',
                 'Auto Islamic Reminders',
                 'Global Broadcast',
                 'Platform Bot',
