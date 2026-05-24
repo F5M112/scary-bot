@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { giveawayAPI, guildsAPI, ticketsAPI } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import {
   Gift, Plus, Trash2, Loader2, X, Users,
   Trophy, RotateCcw, StopCircle, Clock, CheckCircle2, Crown,
@@ -13,6 +14,7 @@ export default function GiveawayPage() {
   const { user }                          = useAuthStore();
   const [guilds, setGuilds]               = useState([]);
   const [selectedGuild, setSelectedGuild] = useState('');
+  const t = useT();
   const [giveaways, setGiveaways]         = useState([]);
   const [channels, setChannels]           = useState([]);
   const [loading, setLoading]             = useState(false);
