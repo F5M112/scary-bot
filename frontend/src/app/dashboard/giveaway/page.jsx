@@ -37,15 +37,15 @@ export default function GiveawayPage() {
       ]);
       setGiveaways(g.data.giveaways);
       setChannels(c.data.channels?.filter((x) => x.type === 'text') || []);
-    } catch { toast.error('فشل التحميل'); }
+    } catch { toast.error(t('giveaway.loadingFailed'));); }
     finally { setLoading(false); }
   };
 
   const handleEnd = async (id) => {
-    if (!confirm('سيتم إنهاء المسابقة الآن واختيار الفائزين. تأكيد؟')) return;
+    if (!confirm(t('giveaway.endConfirm'))) return;
     try {
       const { data } = await giveawayAPI.end(selectedGuild, id);
-      toast.success('✅ تم إنهاء المسابقة');
+      toast.success(`✅ ${t('giveaway.endedSuccess')}`);
       loadAll();
     } catch (err) { toast.error(err.response?.data?.error || 'فشل'); }
   };
@@ -79,8 +79,8 @@ export default function GiveawayPage() {
           <Gift className="text-yellow-400" size={24} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold">🎉 المسابقات (Giveaway)</h1>
-          <p className="text-white/60">أنشئ مسابقات بجوائز وسحب عشوائي للفائزين</p>
+         <h1 className="text-3xl font-bold">🎉 {t('giveaway.title')}</h1>
+          <p className="text-white/60">{t('giveaway.subtitle')}</p>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function GiveawayPage() {
       {selectedGuild && !loading && active.length > 0 && (
         <section>
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Clock className="text-green-400" size={18} /> المسابقات النشطة
+            <Clock className="text-green-400" size={18} /> {t('giveaway.activeGiveaways')}
           </h2>
           <div className="grid gap-4">
             {active.map((g) => <GiveawayCard key={g._id} g={g} channels={channels} onEnd={handleEnd} onDelete={handleDelete} />)}
@@ -131,7 +131,7 @@ export default function GiveawayPage() {
       {selectedGuild && !loading && ended.length > 0 && (
         <section>
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Trophy className="text-yellow-400" size={18} /> المسابقات المنتهية
+            <Trophy className="text-yellow-400" size={18} /> {t('giveaway.endedGiveaways')}
           </h2>
           <div className="grid gap-4">
             {ended.map((g) => <GiveawayCard key={g._id} g={g} channels={channels} onReroll={handleReroll} onDelete={handleDelete} />)}
@@ -143,10 +143,10 @@ export default function GiveawayPage() {
       {selectedGuild && !loading && giveaways.length === 0 && (
         <div className="card text-center py-16">
           <Gift className="mx-auto text-white/20 mb-4" size={56} />
-          <p className="text-white/60 text-lg font-medium">لا توجد مسابقات</p>
-          <p className="text-white/40 text-sm mt-2 mb-6">ابدأ بإنشاء أول مسابقة لسيرفرك</p>
+          <p className="text-white/60 text-lg font-medium">{t('giveaway.empty')}</p>
+         <p className="text-white/40 text-sm mt-2 mb-6">{t('giveaway.emptyDesc')}</p>
           <button onClick={() => setShowCreate(true)} className="btn-primary inline-flex items-center gap-2">
-            <Plus size={16} /> إنشاء مسابقة
+            <Plus size={16} /> {t('giveaway.create')}
           </button>
         </div>
       )}
@@ -165,6 +165,7 @@ export default function GiveawayPage() {
 
 // ── Giveaway Card ─────────────────────────────────────────────────
 function GiveawayCard({ g, channels, onEnd, onReroll, onDelete }) {
+  const t = useT();
   const isActive   = g.status === 'active';
   const timeLeft   = Math.max(0, new Date(g.endAt) - Date.now());
   const channelName = channels.find((c) => c.id === g.channelId)?.name || g.channelId;
@@ -174,10 +175,10 @@ function GiveawayCard({ g, channels, onEnd, onReroll, onDelete }) {
     const m = Math.floor(s / 60);
     const h = Math.floor(m / 60);
     const d = Math.floor(h / 24);
-    if (d > 0) return `${d} يوم`;
-    if (h > 0) return `${h} ساعة`;
-    if (m > 0) return `${m} دقيقة`;
-    return `${s} ثانية`;
+    if (d > 0) return `${d} ${t('giveaway.days')}`;
+  if (h > 0) return `${h} ${t('giveaway.hours')}`;
+  if (m > 0) return `${m} ${t('giveaway.minutes')}`;
+  return `${s} ${t('giveaway.seconds')}`;
   };
 
   return (
@@ -222,9 +223,9 @@ function GiveawayCard({ g, channels, onEnd, onReroll, onDelete }) {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Stat label="المشتركون"    value={g.participants.length}    icon="👤" />
-        <Stat label="عدد الفائزين" value={g.winnersCount}           icon="🏆" />
-        <Stat label="القناة"       value={`#${channelName}`}         icon="📢" />
+        <Stat label={t('giveaway.participants')} value={g.participants.length} icon="👤" />
+        <Stat label={t('giveaway.winners')} value={g.winnersCount} icon="🏆" />
+        <Stat label={t('giveaway.channel')} value={`#${channelName}`} icon="📢" />
         <Stat
           label={isActive ? 'الوقت المتبقي' : 'انتهت'}
           value={isActive ? formatTime(timeLeft) : new Date(g.endAt).toLocaleDateString('ar-SA')}
@@ -252,16 +253,16 @@ function GiveawayCard({ g, channels, onEnd, onReroll, onDelete }) {
       <div className="flex flex-wrap gap-2">
         {isActive && (
           <button onClick={() => onEnd(g._id)} className="btn-danger flex items-center gap-2 text-sm">
-            <StopCircle size={14} /> إنهاء الآن
+            <StopCircle size={14} /> {t('giveaway.endNow')}
           </button>
         )}
         {!isActive && (
           <button onClick={() => onReroll(g._id)} className="btn-secondary flex items-center gap-2 text-sm">
-            <RotateCcw size={14} /> إعادة السحب
+           <RotateCcw size={14} /> {t('giveaway.reroll')}
           </button>
         )}
         <button onClick={() => onDelete(g._id)} className="text-sm px-3 py-2 bg-red-900/20 text-red-400 hover:bg-red-900/40 rounded-lg flex items-center gap-2 border border-red-900/30">
-          <Trash2 size={14} /> حذف
+          <Trash2 size={14} /> {t('giveaway.delete')}
         </button>
       </div>
     </div>
@@ -280,6 +281,7 @@ function Stat({ label, value, icon }) {
 
 // ── Create Modal ──────────────────────────────────────────────────
 function CreateGiveawayModal({ guildId, channels, onClose, onCreated }) {
+  const t = useT();
   const [form, setForm] = useState({
     title:        '',
     description:  '',
@@ -304,15 +306,15 @@ function CreateGiveawayModal({ guildId, channels, onClose, onCreated }) {
 
   const submit = async () => {
     if (!form.title || !form.prize || !form.channelId || !form.endAt) {
-      return toast.error('العنوان، الجائزة، القناة، والتاريخ مطلوبة');
+      return toast.error(t('giveaway.requiredFields'));
     }
     if (new Date(form.endAt) <= new Date()) {
-      return toast.error('التاريخ يجب أن يكون في المستقبل');
+      return toast.error(t('giveaway.futureDate'));
     }
     setSubmitting(true);
     try {
       await giveawayAPI.create(guildId, form);
-      toast.success('✅ تم إنشاء المسابقة في ديسكورد!');
+      toast.success(`✅ ${t('giveaway.createdSuccess')}`);
       onCreated();
     } catch (err) {
       toast.error(err.response?.data?.error || 'فشل');
@@ -326,7 +328,7 @@ function CreateGiveawayModal({ guildId, channels, onClose, onCreated }) {
       <div className="card w-full max-w-2xl my-4">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold flex items-center gap-2">
-            <Gift className="text-yellow-400" size={24} /> إنشاء مسابقة جديدة
+            <<Gift className="text-yellow-400" size={24} /> {t('giveaway.createNew')}
           </h3>
           <button onClick={onClose} className="text-white/50 hover:text-white"><X size={22} /></button>
         </div>
@@ -335,13 +337,13 @@ function CreateGiveawayModal({ guildId, channels, onClose, onCreated }) {
           <div className="grid md:grid-cols-2 gap-4">
             {/* Title */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1.5">عنوان المسابقة <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium mb-1.5">{t('giveaway.titleField')}<span className="text-red-400">*</span></label>
               <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="مثل: مسابقة رمضان الكبرى" className="input" />
             </div>
 
             {/* Prize */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">الجائزة <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium mb-1.5">{t('giveaway.prize')}<span className="text-red-400">*</span></label>
               <input value={form.prize} onChange={(e) => update('prize', e.target.value)} placeholder="مثل: 100$ Amazon Gift Card" className="input" />
             </div>
 
@@ -353,9 +355,9 @@ function CreateGiveawayModal({ guildId, channels, onClose, onCreated }) {
 
             {/* Channel */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">قناة النشر <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium mb-1.5">{t('giveaway.publishChannel')} <span className="text-red-400">*</span></label>
               <select value={form.channelId} onChange={(e) => update('channelId', e.target.value)} className="input">
-                <option value="">— اختر قناة —</option>
+                <option value="">— {t('giveaway.chooseChannel')} —</option>
                 {channels.map((c) => <option key={c.id} value={c.id}># {c.name}</option>)}
               </select>
             </div>
