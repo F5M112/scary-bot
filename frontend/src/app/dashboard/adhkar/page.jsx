@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { adhkarAPI, guildsAPI, ticketsAPI } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import {
   Loader2, Save, Send, Bookmark, Power, Clock, CheckCircle2, AlertCircle,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const PRESET_INTERVALS = [
 ];
 
 export default function AdhkarPage() {
+  const t = useT();
   const [guilds, setGuilds] = useState([]);
   const [selectedGuild, setSelectedGuild] = useState('');
   const [discordChannels, setDiscordChannels] = useState([]);
