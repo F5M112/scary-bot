@@ -2,16 +2,17 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { welcomeAPI, guildsAPI } from '@/lib/api';
 import api from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { Save, Send, Trash2, Loader2, Eye, Move } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const VARS = [
-  { var: '{user}',     desc: 'منشن العضو' },
-  { var: '{username}', desc: 'اسم العضو' },
-  { var: '{server}',   desc: 'اسم السيرفر' },
-  { var: '{count}',    desc: 'عدد الأعضاء' },
-  { var: '{inviter}',  desc: 'من أرسل الرابط' },
-  { var: '{invite}',   desc: 'رابط الدعوة' },
+  { var: '{user}',     desc: { ar: 'منشن العضو',    en: 'Member Mention' } },
+  { var: '{username}', desc: { ar: 'اسم العضو',     en: 'Member Name' } },
+  { var: '{server}',   desc: { ar: 'اسم السيرفر',   en: 'Server Name' } },
+  { var: '{count}',    desc: { ar: 'عدد الأعضاء',   en: 'Member Count' } },
+  { var: '{inviter}',  desc: { ar: 'من أرسل الرابط', en: 'Inviter' } },
+  { var: '{invite}',   desc: { ar: 'رابط الدعوة',   en: 'Invite Link' } },
 ];
 
 const DEFAULT = {
@@ -63,6 +64,7 @@ const Section = ({ title, children }) => (
 );
 
 export default function WelcomePage() {
+  const t = useT();
   const [guilds, setGuilds]     = useState([]);
   const [guild, setGuild]       = useState('');
   const [channels, setChannels] = useState([]);
@@ -153,37 +155,57 @@ export default function WelcomePage() {
   useEffect(() => { if (form.cardEnabled && tab === 'card') drawCard(); }, [form, tab, drawCard]);
 
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const render = (t) => (t || '')
-    .replace(/\{user\}/g, '@عضو_جديد').replace(/\{username\}/g, 'عضو_جديد')
-    .replace(/\{server\}/g, guilds.find(g => g.guildId === guild)?.guildName || 'السيرفر')
-    .replace(/\{count\}/g, '١٥٠').replace(/\{inviter\}/g, 'أحمد').replace(/\{invite\}/g, 'discord.gg/xxxx');
+  const renderPreview = (text) => (text || '')
+    .replace(/\{user\}/g, '@member')
+    .replace(/\{username\}/g, 'member')
+    .replace(/\{server\}/g, guilds.find(g => g.guildId === guild)?.guildName || 'Server')
+    .replace(/\{count\}/g, '150')
+    .replace(/\{inviter\}/g, 'Ahmed')
+    .replace(/\{invite\}/g, 'discord.gg/xxxx');
 
   const handleSave = async () => {
-    if (!form.channelId && !form.sendAsDM) return toast.error('اختر قناة أو فعّل DM');
+    if (!form.channelId && !form.sendAsDM) return toast.error(t('selectServer'));
     setSaving(true);
-    try { await welcomeAPI.save(guild, form); toast.success('✅ تم الحفظ'); }
-    catch (e) { toast.error(e.response?.data?.error || 'فشل الحفظ'); }
+    try { await welcomeAPI.save(guild, form); toast.success('✅ ' + t('success')); }
+    catch (e) { toast.error(e.response?.data?.error || t('error')); }
     finally { setSaving(false); }
   };
 
   const handleTest = async () => {
     setTesting(true);
-    try { await welcomeAPI.test(guild); toast.success('✅ تم الإرسال'); }
-    catch (e) { toast.error(e.response?.data?.error || 'فشل الإرسال'); }
+    try { await welcomeAPI.test(guild); toast.success('✅ ' + t('success')); }
+    catch (e) { toast.error(e.response?.data?.error || t('error')); }
     finally { setTesting(false); }
   };
+
+  const tabs = [
+    ['message', `💬 ${t('welcomeTabMessage')}`],
+    ['card',    `🖼️ ${t('welcomeTabCard')}`],
+    ['settings',`⚙️ ${t('welcomeTabSettings')}`],
+  ];
+
+  const cardElements = [
+    ['cardShowAvatar',     `👤 ${t('welcomeCardAvatar')}`],
+    ['cardShowUsername',   `📛 ${t('welcomeCardUsername')}`],
+    ['cardShowText',       `✏️ ${t('welcomeCardText')}`],
+    ['cardShowServerName', `🏠 ${t('welcomeCardServerName')}`],
+    ['cardShowCount',      `🔢 ${t('welcomeCardCount')}`],
+  ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center text-2xl">👋</div>
-        <div><h1 className="text-3xl font-bold">رسالة الترحيب</h1><p className="text-white/60">رسالة تلقائية عند انضمام أعضاء جدد</p></div>
+        <div>
+          <h1 className="text-3xl font-bold">{t('welcomeTitle')}</h1>
+          <p className="text-white/60">{t('welcomeDesc')}</p>
+        </div>
       </div>
 
       <div className="card">
-        <label className="block text-sm font-medium mb-2">السيرفر</label>
+        <label className="block text-sm font-medium mb-2">{t('selectServer')}</label>
         <select value={guild} onChange={e => setGuild(e.target.value)} className="input">
-          <option value="">— اختر سيرفراً —</option>
+          <option value="">— {t('selectServer')} —</option>
           {guilds.map(g => <option key={g.guildId} value={g.guildId}>{g.guildName}</option>)}
         </select>
       </div>
@@ -192,12 +214,15 @@ export default function WelcomePage() {
         ? <div className="flex justify-center py-12"><Loader2 className="animate-spin text-red-500" size={32} /></div>
         : <div className="space-y-4">
             <div className="card flex items-center justify-between gap-4">
-              <div><div className="font-bold text-lg">تفعيل الترحيب</div><div className="text-sm text-white/50">إرسال رسالة عند انضمام عضو جديد</div></div>
+              <div>
+                <div className="font-bold text-lg">{t('welcomeEnable')}</div>
+                <div className="text-sm text-white/50">{t('welcomeEnableDesc')}</div>
+              </div>
               <Toggle value={form.enabled} onChange={v => upd('enabled', v)} />
             </div>
 
             <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
-              {[['message', '💬 الرسالة'], ['card', '🖼️ صورة الترحيب'], ['settings', '⚙️ إعدادات']].map(([id, label]) => (
+              {tabs.map(([id, label]) => (
                 <button key={id} onClick={() => setTab(id)}
                   className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${tab === id ? 'bg-[#1a1a2e] text-white' : 'text-white/40 hover:text-white'}`}>
                   {label}
@@ -211,45 +236,62 @@ export default function WelcomePage() {
                 {/* MESSAGE TAB */}
                 {tab === 'message' && <>
                   <div className="card space-y-3">
-                    <label className="font-bold">وجهة الإرسال</label>
+                    <label className="font-bold">{t('welcomeDestination')}</label>
                     <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer text-sm"><input type="radio" checked={!form.sendAsDM} onChange={() => upd('sendAsDM', false)} /> إرسال لقناة</label>
-                      <label className="flex items-center gap-2 cursor-pointer text-sm"><input type="radio" checked={form.sendAsDM} onChange={() => upd('sendAsDM', true)} /> إرسال كـ DM</label>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm">
+                        <input type="radio" checked={!form.sendAsDM} onChange={() => upd('sendAsDM', false)} />
+                        {t('welcomeToChannel')}
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm">
+                        <input type="radio" checked={form.sendAsDM} onChange={() => upd('sendAsDM', true)} />
+                        {t('welcomeToDM')}
+                      </label>
                     </div>
                     {!form.sendAsDM && (
                       <select value={form.channelId} onChange={e => upd('channelId', e.target.value)} className="input">
-                        <option value="">— اختر قناة —</option>
+                        <option value="">— {t('selectChannel')} —</option>
                         {channels.map(c => <option key={c.id} value={c.id}># {c.name}</option>)}
                       </select>
                     )}
                   </div>
 
                   <div className="card">
-                    <label className="block text-sm font-medium mb-2">نص الرسالة</label>
+                    <label className="block text-sm font-medium mb-2">{t('welcomeMessageText')}</label>
                     <textarea value={form.message} onChange={e => upd('message', e.target.value)} rows={4} className="input resize-none font-mono text-sm" />
                     <div className="flex flex-wrap gap-1 mt-2">
                       {VARS.map(v => (
                         <button key={v.var} onClick={() => upd('message', form.message + v.var)}
-                          className="text-xs bg-black/30 px-2 py-1 rounded text-red-300 hover:bg-black/50 transition font-mono">{v.var}</button>
+                          className="text-xs bg-black/30 px-2 py-1 rounded text-red-300 hover:bg-black/50 transition font-mono">
+                          {v.var}
+                        </button>
                       ))}
                     </div>
                   </div>
 
                   <div className="card space-y-3">
-                    <div className="flex items-center justify-between"><label className="font-bold">Embed</label><Toggle value={form.embedEnabled} onChange={v => upd('embedEnabled', v)} /></div>
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold">{t('welcomeEmbed')}</label>
+                      <Toggle value={form.embedEnabled} onChange={v => upd('embedEnabled', v)} />
+                    </div>
                     {form.embedEnabled && <>
                       <div className="flex gap-2 flex-wrap">
                         {['#dc2626', '#5865F2', '#23A55A', '#FFD700', '#9146FF'].map(c => (
-                          <button key={c} onClick={() => upd('embedColor', c)} className={`w-7 h-7 rounded-full border-4 transition ${form.embedColor === c ? 'border-white' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                          <button key={c} onClick={() => upd('embedColor', c)}
+                            className={`w-7 h-7 rounded-full border-4 transition ${form.embedColor === c ? 'border-white' : 'border-transparent'}`}
+                            style={{ backgroundColor: c }} />
                         ))}
                         <input type="color" value={form.embedColor} onChange={e => upd('embedColor', e.target.value)} className="w-7 h-7 rounded cursor-pointer bg-transparent border-0" />
                       </div>
-                      <input value={form.embedTitle} onChange={e => upd('embedTitle', e.target.value)} placeholder="العنوان" className="input" />
-                      <textarea value={form.embedDescription} onChange={e => upd('embedDescription', e.target.value)} rows={2} placeholder="الوصف" className="input resize-none" />
-                      <input value={form.embedFooter} onChange={e => upd('embedFooter', e.target.value)} placeholder="التذييل" className="input" />
+                      <input value={form.embedTitle} onChange={e => upd('embedTitle', e.target.value)} placeholder={t('embedTitle')} className="input" />
+                      <textarea value={form.embedDescription} onChange={e => upd('embedDescription', e.target.value)} rows={2} placeholder={t('embedDescription')} className="input resize-none" />
+                      <input value={form.embedFooter} onChange={e => upd('embedFooter', e.target.value)} placeholder={t('embedFooter')} className="input" />
                       <div className="flex gap-4 text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.embedThumbnail} onChange={e => upd('embedThumbnail', e.target.checked)} /> Thumbnail</label>
-                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.embedImage} onChange={e => upd('embedImage', e.target.checked)} /> Image كبيرة</label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={form.embedThumbnail} onChange={e => upd('embedThumbnail', e.target.checked)} /> Thumbnail
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={form.embedImage} onChange={e => upd('embedImage', e.target.checked)} /> Image
+                        </label>
                       </div>
                     </>}
                   </div>
@@ -258,43 +300,40 @@ export default function WelcomePage() {
                 {/* CARD TAB */}
                 {tab === 'card' && <>
                   <div className="card flex items-center justify-between gap-4">
-                    <div><div className="font-bold">تفعيل صورة الترحيب</div><div className="text-sm text-white/50">صورة مخصصة مثل ProBot</div></div>
+                    <div>
+                      <div className="font-bold">{t('welcomeCardTitle')}</div>
+                      <div className="text-sm text-white/50">{t('welcomeCardDesc')}</div>
+                    </div>
                     <Toggle value={form.cardEnabled} onChange={v => upd('cardEnabled', v)} />
                   </div>
 
                   {form.cardEnabled && (
                     <div className="card space-y-5">
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">🖼️ رابط صورة الخلفية</label>
+                        <label className="block text-sm font-medium mb-1.5">🖼️ {t('welcomeCardBg')}</label>
                         <input value={form.cardBackground} onChange={e => upd('cardBackground', e.target.value)} placeholder="https://example.com/bg.png" className="input" />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">✏️ النص الرئيسي</label>
+                        <label className="block text-sm font-medium mb-1.5">✏️ {t('welcomeCardMainText')}</label>
                         <input value={form.cardText} onChange={e => upd('cardText', e.target.value)} className="input" />
                       </div>
 
-                      <Section title="📐 أبعاد الصورة">
-                        <Slider label="العرض (Width)" value={form.cardWidth} onChange={v => upd('cardWidth', v)} min={400} max={1200} />
-                        <Slider label="الارتفاع (Height)" value={form.cardHeight} onChange={v => upd('cardHeight', v)} min={100} max={500} />
+                      <Section title={`📐 ${t('welcomeCardDimensions')}`}>
+                        <Slider label={t('welcomeCardWidth')} value={form.cardWidth} onChange={v => upd('cardWidth', v)} min={400} max={1200} />
+                        <Slider label={t('welcomeCardHeight')} value={form.cardHeight} onChange={v => upd('cardHeight', v)} min={100} max={500} />
                       </Section>
 
-                      <Section title="🔤 أحجام النصوص">
-                        <Slider label="حجم النص الرئيسي" value={form.cardTextSize} onChange={v => upd('cardTextSize', v)} min={10} max={60} />
-                        <Slider label="حجم اسم السيرفر" value={form.serverNameSize} onChange={v => upd('serverNameSize', v)} min={10} max={60} />
-                        <Slider label="حجم اسم العضو" value={form.usernameSize} onChange={v => upd('usernameSize', v)} min={10} max={60} />
-                        <Slider label="حجم رقم العضو" value={form.countSize} onChange={v => upd('countSize', v)} min={10} max={40} />
+                      <Section title={`🔤 ${t('welcomeCardTextSizes')}`}>
+                        <Slider label={t('welcomeCardText')} value={form.cardTextSize} onChange={v => upd('cardTextSize', v)} min={10} max={60} />
+                        <Slider label={t('welcomeCardServerName')} value={form.serverNameSize} onChange={v => upd('serverNameSize', v)} min={10} max={60} />
+                        <Slider label={t('welcomeCardUsername')} value={form.usernameSize} onChange={v => upd('usernameSize', v)} min={10} max={60} />
+                        <Slider label={t('welcomeCardCount')} value={form.countSize} onChange={v => upd('countSize', v)} min={10} max={40} />
                       </Section>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-medium">عناصر الصورة</label>
-                        {[
-                          ['cardShowAvatar',     '👤 صورة البروفايل'],
-                          ['cardShowUsername',   '📛 اسم العضو'],
-                          ['cardShowText',       '✏️ النص الرئيسي'],
-                          ['cardShowServerName', '🏠 اسم السيرفر'],
-                          ['cardShowCount',      '🔢 رقم العضو'],
-                        ].map(([k, l]) => (
+                        <label className="block text-sm font-medium">{t('welcomeCardElements')}</label>
+                        {cardElements.map(([k, l]) => (
                           <div key={k} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
                             <span className="text-sm">{l}</span>
                             <Toggle value={form[k]} onChange={v => upd(k, v)} />
@@ -302,36 +341,38 @@ export default function WelcomePage() {
                         ))}
                       </div>
 
-                      <Section title="👤 موضع صورة البروفايل">
-                        <Slider label="موضع X (أفقي)" value={form.avatarX} onChange={v => upd('avatarX', v)} min={50} max={form.cardWidth - 50} />
-                        <Slider label="موضع Y (عمودي)" value={form.avatarY} onChange={v => upd('avatarY', v)} min={50} max={form.cardHeight - 50} />
-                        <Slider label="حجم الصورة" value={form.avatarRadius} onChange={v => upd('avatarRadius', v)} min={20} max={120} />
-                        <Slider label="سمك الحدود" value={form.avatarBorderWidth} onChange={v => upd('avatarBorderWidth', v)} min={0} max={20} />
+                      <Section title={`👤 ${t('welcomeCardAvatarPos')}`}>
+                        <Slider label={t('welcomeCardAvatarX')} value={form.avatarX} onChange={v => upd('avatarX', v)} min={50} max={form.cardWidth - 50} />
+                        <Slider label={t('welcomeCardAvatarY')} value={form.avatarY} onChange={v => upd('avatarY', v)} min={50} max={form.cardHeight - 50} />
+                        <Slider label={t('welcomeCardAvatarSize')} value={form.avatarRadius} onChange={v => upd('avatarRadius', v)} min={20} max={120} />
+                        <Slider label={t('welcomeCardBorderWidth')} value={form.avatarBorderWidth} onChange={v => upd('avatarBorderWidth', v)} min={0} max={20} />
                         <div>
-                          <label className="block text-xs text-white/60 mb-1.5">لون الحدود</label>
+                          <label className="block text-xs text-white/60 mb-1.5">{t('welcomeCardBorderColor')}</label>
                           <div className="flex gap-2">
                             {['#dc2626', '#5865F2', '#23A55A', '#FFD700', '#ffffff'].map(c => (
-                              <button key={c} onClick={() => upd('avatarBorderColor', c)} className={`w-6 h-6 rounded-full border-2 transition ${form.avatarBorderColor === c ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                              <button key={c} onClick={() => upd('avatarBorderColor', c)}
+                                className={`w-6 h-6 rounded-full border-2 transition ${form.avatarBorderColor === c ? 'border-white scale-110' : 'border-transparent'}`}
+                                style={{ backgroundColor: c }} />
                             ))}
                             <input type="color" value={form.avatarBorderColor} onChange={e => upd('avatarBorderColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
                           </div>
                         </div>
                       </Section>
 
-                      <Section title="📝 مواضع النصوص">
-                        <Slider label="موضع X للنصوص" value={form.textX} onChange={v => upd('textX', v)} min={50} max={form.cardWidth - 50} />
-                        <Slider label="النص الرئيسي Y" value={form.cardTextY} onChange={v => upd('cardTextY', v)} min={20} max={form.cardHeight - 10} />
-                        <Slider label="اسم السيرفر Y" value={form.serverNameY} onChange={v => upd('serverNameY', v)} min={20} max={form.cardHeight - 10} />
-                        <Slider label="اسم العضو Y" value={form.usernameY} onChange={v => upd('usernameY', v)} min={20} max={form.cardHeight - 10} />
-                        <Slider label="رقم العضو Y" value={form.countY} onChange={v => upd('countY', v)} min={20} max={form.cardHeight - 10} />
+                      <Section title={`📝 ${t('welcomeCardTextPos')}`}>
+                        <Slider label={t('welcomeCardTextX')} value={form.textX} onChange={v => upd('textX', v)} min={50} max={form.cardWidth - 50} />
+                        <Slider label={`${t('welcomeCardText')} Y`} value={form.cardTextY} onChange={v => upd('cardTextY', v)} min={20} max={form.cardHeight - 10} />
+                        <Slider label={`${t('welcomeCardServerName')} Y`} value={form.serverNameY} onChange={v => upd('serverNameY', v)} min={20} max={form.cardHeight - 10} />
+                        <Slider label={`${t('welcomeCardUsername')} Y`} value={form.usernameY} onChange={v => upd('usernameY', v)} min={20} max={form.cardHeight - 10} />
+                        <Slider label={`${t('welcomeCardCount')} Y`} value={form.countY} onChange={v => upd('countY', v)} min={20} max={form.cardHeight - 10} />
                       </Section>
 
-                      <Section title="🎨 ألوان النصوص">
+                      <Section title={`🎨 ${t('welcomeCardColors')}`}>
                         <div className="grid grid-cols-3 gap-3">
                           {[
-                            ['cardTextColor',   'النص الرئيسي'],
-                            ['serverNameColor', 'اسم السيرفر'],
-                            ['usernameColor',   'اسم العضو'],
+                            ['cardTextColor',   t('welcomeCardText')],
+                            ['serverNameColor', t('welcomeCardServerName')],
+                            ['usernameColor',   t('welcomeCardUsername')],
                           ].map(([k, l]) => (
                             <div key={k}>
                               <label className="block text-xs text-white/60 mb-1">{l}</label>
@@ -342,15 +383,19 @@ export default function WelcomePage() {
                       </Section>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">موضع الصورة</label>
-                        {[['before', 'قبل الرسالة'], ['with', 'مع الرسالة'], ['channel', 'قناة منفصلة']].map(([v, l]) => (
+                        <label className="block text-sm font-medium mb-2">{t('welcomeCardPosition')}</label>
+                        {[
+                          ['before',  t('welcomeCardBefore')],
+                          ['with',    t('welcomeCardWith')],
+                          ['channel', t('welcomeCardChannel')],
+                        ].map(([v, l]) => (
                           <label key={v} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 text-sm">
                             <input type="radio" checked={form.cardPosition === v} onChange={() => upd('cardPosition', v)} /> {l}
                           </label>
                         ))}
                         {form.cardPosition === 'channel' && (
                           <select value={form.cardChannelId} onChange={e => upd('cardChannelId', e.target.value)} className="input mt-2">
-                            <option value="">— اختر قناة —</option>
+                            <option value="">— {t('selectChannel')} —</option>
                             {channels.map(c => <option key={c.id} value={c.id}># {c.name}</option>)}
                           </select>
                         )}
@@ -362,23 +407,36 @@ export default function WelcomePage() {
                 {/* SETTINGS TAB */}
                 {tab === 'settings' && <>
                   <div className="card flex items-center justify-between gap-4">
-                    <div><div className="font-bold">🔗 تتبع الدعوات</div><div className="text-sm text-white/50">معرفة من أرسل الرابط للعضو</div></div>
+                    <div>
+                      <div className="font-bold">🔗 {t('welcomeTrackInvites')}</div>
+                      <div className="text-sm text-white/50">{t('welcomeTrackInvitesDesc')}</div>
+                    </div>
                     <Toggle value={form.trackInvites} onChange={v => upd('trackInvites', v)} />
                   </div>
                   <div className="card flex items-center justify-between gap-4">
-                    <div><div className="font-bold">🖼️ إرسال صورة البروفايل</div><div className="text-sm text-white/50">كـ attachment خارج الـ Embed</div></div>
+                    <div>
+                      <div className="font-bold">🖼️ {t('welcomeContentImage')}</div>
+                      <div className="text-sm text-white/50">{t('welcomeContentImageDesc')}</div>
+                    </div>
                     <Toggle value={form.contentImage} onChange={v => upd('contentImage', v)} />
                   </div>
                 </>}
 
                 <div className="flex gap-3">
                   <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2 py-2.5">
-                    {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} حفظ
+                    {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                    {t('save')}
                   </button>
                   <button onClick={handleTest} disabled={testing} className="btn-secondary flex items-center gap-2 px-4">
-                    {testing ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />} تجربة
+                    {testing ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                    {t('welcomeTest')}
                   </button>
-                  <button onClick={async () => { if (!confirm('حذف؟')) return; await welcomeAPI.remove(guild); toast.success('تم الحذف'); setForm(DEFAULT); }} className="btn-danger p-2.5">
+                  <button onClick={async () => {
+                    if (!confirm(t('welcomeDeleteConfirm'))) return;
+                    await welcomeAPI.remove(guild);
+                    toast.success(t('success'));
+                    setForm(DEFAULT);
+                  }} className="btn-danger p-2.5">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -386,12 +444,14 @@ export default function WelcomePage() {
 
               {/* Preview - Sticky */}
               <div className="space-y-3 lg:sticky lg:top-24 lg:self-start">
-                <h3 className="font-bold flex items-center gap-2"><Eye size={16} /> معاينة مباشرة</h3>
+                <h3 className="font-bold flex items-center gap-2">
+                  <Eye size={16} /> {t('welcomeLivePreview')}
+                </h3>
 
                 {tab === 'card' && form.cardEnabled && (
                   <div>
                     <canvas ref={canvasRef} className="w-full rounded-xl border border-white/10" />
-                    <p className="text-xs text-white/40 mt-1 text-center">تتحدث المعاينة تلقائياً عند تغيير الإعدادات</p>
+                    <p className="text-xs text-white/40 mt-1 text-center">{t('welcomePreviewNote')}</p>
                   </div>
                 )}
 
@@ -400,17 +460,17 @@ export default function WelcomePage() {
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 bg-red-600/30 rounded-full flex items-center justify-center">🤖</div>
                       <span className="font-bold text-xs">ST Bot</span>
-                      <span className="text-white/30 text-xs">اليوم</span>
+                      <span className="text-white/30 text-xs">Today</span>
                     </div>
-                    {form.message && <p className="whitespace-pre-wrap text-sm mb-2 text-white/90">{render(form.message)}</p>}
+                    {form.message && <p className="whitespace-pre-wrap text-sm mb-2 text-white/90">{renderPreview(form.message)}</p>}
                     {form.embedEnabled && (
                       <div className="rounded-lg overflow-hidden" style={{ borderLeft: `4px solid ${form.embedColor}` }}>
                         <div className="bg-[#2B2D31] p-3">
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
-                              {form.embedTitle && <div className="font-bold text-sm mb-1" style={{ color: form.embedColor }}>{render(form.embedTitle)}</div>}
-                              {form.embedDescription && <div className="text-white/80 text-xs whitespace-pre-wrap">{render(form.embedDescription)}</div>}
-                              {form.embedFooter && <div className="text-white/40 text-xs mt-2 pt-2 border-t border-white/10">{render(form.embedFooter)}</div>}
+                              {form.embedTitle && <div className="font-bold text-sm mb-1" style={{ color: form.embedColor }}>{renderPreview(form.embedTitle)}</div>}
+                              {form.embedDescription && <div className="text-white/80 text-xs whitespace-pre-wrap">{renderPreview(form.embedDescription)}</div>}
+                              {form.embedFooter && <div className="text-white/40 text-xs mt-2 pt-2 border-t border-white/10">{renderPreview(form.embedFooter)}</div>}
                             </div>
                             {form.embedThumbnail && <img src="https://cdn.discordapp.com/embed/avatars/0.png" className="w-12 h-12 rounded-full shrink-0" />}
                           </div>
@@ -421,10 +481,12 @@ export default function WelcomePage() {
                   </div>
                 )}
 
-                {tab === 'settings' && <div className="card text-center text-white/30 py-8 text-sm">إعدادات إضافية للترحيب</div>}
+                {tab === 'settings' && (
+                  <div className="card text-center text-white/30 py-8 text-sm">{t('welcomeTabSettings')}</div>
+                )}
 
                 <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-200/80">
-                  💡 صورة بروفايل العضو الحقيقية ستظهر تلقائياً عند انضمامه
+                  💡 {t('welcomePreviewNote')}
                 </div>
               </div>
             </div>
