@@ -29,12 +29,11 @@ const [registering, setRegistering] = useState(null);
 // Handle redirect from Discord OAuth
 useEffect(() => {
 if (params.get('discord_linked') === '1') {
-toast.success(`✅ ${t('discordLinkedSuccess')}`);
+toast.success(✅ ${t('discordLinkedSuccess')});
 fetchUser();
 router.replace('/dashboard');
 }
 
-```
 const err = params.get('discord_error');
 
 if (err) {
@@ -48,14 +47,12 @@ if (err) {
   toast.error(messages[err] || `${t('error')}: ${err}`);
   router.replace('/dashboard');
 }
-```
 
 }, [params, router, fetchUser, t]);
 
 const load = async () => {
 setLoading(true);
 
-```
 try {
   const reg = await guildsAPI.list();
   setRegisteredGuilds(reg.data.guilds);
@@ -79,7 +76,6 @@ try {
 } finally {
   setLoading(false);
 }
-```
 
 };
 
@@ -90,7 +86,6 @@ if (user) load();
 const handleLinkDiscord = async () => {
 setLinking(true);
 
-```
 try {
   const { data } = await authAPI.linkDiscord();
   window.location.href = data.url;
@@ -98,14 +93,12 @@ try {
   toast.error(err.response?.data?.error || t('failed'));
   setLinking(false);
 }
-```
 
 };
 
 const handleUnlinkDiscord = async () => {
 if (!confirm(t('discordUnlinkConfirm'))) return;
 
-```
 try {
   await authAPI.unlinkDiscord();
 
@@ -116,14 +109,12 @@ try {
 } catch (err) {
   toast.error(err.response?.data?.error || t('failed'));
 }
-```
 
 };
 
 const handleRegisterGuild = async (g) => {
 setRegistering(g.id);
 
-```
 try {
   await guildsAPI.register({
     guildId: g.id,
@@ -139,14 +130,12 @@ try {
 } finally {
   setRegistering(null);
 }
-```
 
 };
 
 const handleUnregisterGuild = async (guildId, name) => {
-if (!confirm(`${t('removeServerConfirm')} "${name}"؟`)) return;
+if (!confirm(${t('removeServerConfirm')} "${name}"؟)) return;
 
-```
 try {
   await guildsAPI.unregister(guildId);
 
@@ -156,12 +145,14 @@ try {
 } catch (err) {
   toast.error(err.response?.data?.error || t('failed'));
 }
-```
 
 };
 
 if (loading) {
-return ( <div className="flex justify-center py-20"> <Loader2 className="animate-spin text-brand-500" size={32} /> </div>
+return (
+
+
+
 );
 }
 
@@ -173,9 +164,10 @@ const availableGuilds = discordGuilds.filter(
 (g) => !registeredIds.has(g.id)
 );
 
-return ( <div className="space-y-8">
+return (
 
-```
+
+
   {/* Header */}
   <div>
     <h1 className="text-3xl font-bold mb-1">
@@ -449,7 +441,3 @@ return ( <div className="space-y-8">
       </div>
     )}
 </div>
-```
-
-);
-}
