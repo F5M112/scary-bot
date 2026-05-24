@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { botAPI, guildsAPI } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import { Bot, Crown, Eye, EyeOff, Loader2, AlertCircle, Trash2, CheckCircle2 } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
