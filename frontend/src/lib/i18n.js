@@ -309,6 +309,40 @@ const translations = {
     testMessage: 'رسالة تجريبية',
     sendTest: 'إرسال تجريبي',
     embedColor: 'لون الـ Embed',
+
+    discordLinkedSuccess: 'تم ربط حساب ديسكورد بنجاح',
+discordAlreadyLinked: 'هذا الحساب مربوط بمستخدم آخر',
+discordSessionExpired: 'انتهت صلاحية الجلسة. حاول مرة ثانية',
+discordOAuthFailed: 'فشل الاتصال بديسكورد',
+discordMissingParams: 'بيانات ناقصة',
+discordLinkExpired: 'انتهت صلاحية ربط ديسكورد. أعد الربط من الزر أدناه.',
+failedLoadData: 'فشل في تحميل البيانات',
+failed: 'فشل',
+discordUnlinkConfirm: 'سيتم فصل حساب ديسكورد. هل أنت متأكد؟',
+discordUnlinked: 'تم فصل حساب ديسكورد',
+serverRegistered: 'تم تسجيل',
+registerFailed: 'فشل التسجيل',
+removeServerConfirm: 'سيتم إزالة السيرفر من حسابك. هل أنت متأكد',
+removedSuccess: 'تمت الإزالة',
+
+currentPlanLabel: 'باقتك',
+linkDiscordTitle: 'اربط حساب ديسكورد',
+linkDiscordDesc: 'لإدارة سيرفراتك، اربط حساب ديسكورد لعرض السيرفرات التي أنت مشرف فيها.',
+linkDiscordButton: 'ربط حساب ديسكورد',
+discordAccountLinked: 'حساب ديسكورد مرتبط',
+unlink: 'فصل',
+
+managedServers: 'سيرفراتي المُدارة',
+noRegisteredServers: 'لم تقم بتسجيل أي سيرفر بعد',
+chooseServerBelow: 'اختر سيرفراً من القائمة أدناه للبدء',
+linkDiscordFirst: 'اربط حساب ديسكورد أولاً لعرض سيرفراتك',
+
+remove: 'إزالة',
+register: 'تسجيل',
+
+noAdminServers: 'لم يتم العثور على سيرفرات تملك صلاحية المشرف فيها',
+
+    
   },
 
   en: {
@@ -606,6 +640,38 @@ const translations = {
     testMessage: 'Test Message',
     sendTest: 'Send Test',
     embedColor: 'Embed Color',
+
+    discordLinkedSuccess: 'Discord account linked successfully',
+discordAlreadyLinked: 'This Discord account is already linked to another user',
+discordSessionExpired: 'Session expired. Please try again',
+discordOAuthFailed: 'Discord connection failed',
+discordMissingParams: 'Missing parameters',
+discordLinkExpired: 'Discord link expired. Please reconnect below.',
+failedLoadData: 'Failed to load data',
+failed: 'Failed',
+discordUnlinkConfirm: 'Your Discord account will be disconnected. Are you sure?',
+discordUnlinked: 'Discord account disconnected',
+serverRegistered: 'Registered',
+registerFailed: 'Registration failed',
+removeServerConfirm: 'The server will be removed from your account. Are you sure',
+removedSuccess: 'Removed successfully',
+
+currentPlanLabel: 'Your Plan',
+linkDiscordTitle: 'Link Your Discord Account',
+linkDiscordDesc: 'To manage your servers, link your Discord account to view servers where you have admin access.',
+linkDiscordButton: 'Link Discord Account',
+discordAccountLinked: 'Discord account linked',
+unlink: 'Unlink',
+
+managedServers: 'Managed Servers',
+noRegisteredServers: 'You have not registered any server yet',
+chooseServerBelow: 'Choose a server below to get started',
+linkDiscordFirst: 'Link your Discord account first to view your servers',
+
+remove: 'Remove',
+register: 'Register',
+
+noAdminServers: 'No servers found where you have administrator permissions',
   },
 };
 
