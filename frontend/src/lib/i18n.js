@@ -59,7 +59,7 @@ const translations = {
     // Landing
     heroTitle: 'بوت ديسكورد متكامل',
     heroSubtitle: 'كل ما يحتاجه سيرفرك',
-    heroDescription: 'منصة SaaS عربية شاملة تضم نظام تذاكر، مسابقات، أذكار تلقائية، تنبيهات Kick Live، إذاعة جماعية، وأكثر — كل شيء في مكان واحد.',
+    heroDescription: 'منصة SaaS عربية شاملة تضم نظام تذاكر، مسابقات، أذكار تلقائية، تنبيهات نظام الترحيب، إذاعة جماعية، وأكثر — كل شيء في مكان واحد.',
     getStarted: 'ابدأ الآن',
     mainFeatures: 'المميزات',
     fullTicketSystem: '🎫 نظام التذاكر',
@@ -362,7 +362,7 @@ const translations = {
 
     heroTitle: 'All-in-One Discord Bot',
     heroSubtitle: 'Everything Your Server Needs',
-    heroDescription: 'A comprehensive Discord bot platform with ticket system, giveaways, Islamic reminders, Kick Live alerts, mass broadcast, and more.',
+    heroDescription: 'A comprehensive Discord bot platform with ticket system, giveaways, Islamic reminders, Welcome system, mass broadcast, and more.',
     getStarted: 'Get Started',
     mainFeatures: 'Features',
     fullTicketSystem: '🎫 Ticket System',
