@@ -89,7 +89,7 @@ export default function BroadcastPage() {
           <div className="card">
             <label className="block text-sm font-medium mb-2">السيرفر</label>
             <select value={selectedGuild} onChange={(e) => setSelectedGuild(e.target.value)} className="input">
-              <option value="">— اختر سيرفراً —</option>
+              <option value="">— {t('selectServer')} —</option>
               {guilds.map(g => <option key={g.guildId} value={g.guildId}>{g.guildName}</option>)}
             </select>
           </div>
