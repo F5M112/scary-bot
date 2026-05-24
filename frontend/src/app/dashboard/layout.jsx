@@ -245,7 +245,7 @@ function SidebarContent({ navItems, pathname, user, t, logout, initial, showClos
               {user.displayName || user.username}
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-              {user.plan === 'premium' ? '⭐ بريميوم' : 'كلاسيك'}
+              {user.plan === 'premium' ? `⭐ ${t('premium')}` : t('classic')}
             </div>
           </div>
         </div>
