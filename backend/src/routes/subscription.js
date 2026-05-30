@@ -22,8 +22,8 @@ const PLANS = {
     id:       'classic',
     name:     'كلاسيك',
     nameEn:   'Classic',
-    price:    37.52,
-    currency: 'SAR',
+    price:    10,
+    currency: 'USD',
     days:     30,
     features: [
       'نظام تذاكر متكامل',
@@ -43,8 +43,8 @@ const PLANS = {
     id:       'premium',
     name:     'بريميوم',
     nameEn:   'Premium',
-    price:    93.81,
-    currency: 'SAR',
+    price:    25,
+    currency: 'USD',
     days:     30,
     popular:  true,
     features: [
