@@ -19,29 +19,43 @@ function PayPalButton({ planId, isCurrent, onSuccess }) {
   const rendered     = useRef(false);
 
   useEffect(() => {
-    if (isCurrent || rendered.current || !window.paypal || !containerRef.current) return;
-    rendered.current = true;
+    if (isCurrent || rendered.current || !containerRef.current) return;
 
-    window.paypal.Buttons({
-      style: {
-        shape:  'rect',
-        color:  planId === 'premium' ? 'gold' : 'silver',
-        layout: 'vertical',
-        label:  'subscribe',
-      },
-      createSubscription: (data, actions) =>
-        actions.subscription.create({ plan_id: PAYPAL_PLANS[planId] }),
-      onApprove: (data) => onSuccess(data.subscriptionID, planId),
-      onError: (err) => {
-        console.error('[PayPal]', err);
-        toast.error('حدث خطأ في الدفع');
-      },
-    }).render(containerRef.current);
-  }, [window.paypal]);
+    const tryRender = () => {
+      if (!window.paypal) return;
+      rendered.current = true;
+      window.paypal.Buttons({
+        style: {
+          shape:  'rect',
+          color:  planId === 'premium' ? 'gold' : 'silver',
+          layout: 'vertical',
+          label:  'subscribe',
+        },
+        createSubscription: (data, actions) =>
+          actions.subscription.create({ plan_id: PAYPAL_PLANS[planId] }),
+        onApprove: (data) => onSuccess(data.subscriptionID, planId),
+        onError: (err) => {
+          console.error('[PayPal]', err);
+          toast.error('حدث خطأ في الدفع');
+        },
+      }).render(containerRef.current);
+    };
+
+    // Try immediately, or wait for SDK
+    if (window.paypal) {
+      tryRender();
+    } else {
+      const interval = setInterval(() => {
+        if (window.paypal) { clearInterval(interval); tryRender(); }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   if (isCurrent) return (
     <div className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-white/5 text-white/50 cursor-not-allowed font-medium">
-      <CheckCircle size={16} /> باقتك الحالية
+      <CheckCircle size={16} /> {' '}
+      باقتك الحالية
     </div>
   );
 
@@ -52,9 +66,9 @@ export default function SubscriptionPage() {
   const { user, fetchUser } = useAuthStore();
   const t    = useT();
   const lang = useI18n((s) => s.lang);
-  const [plans, setPlans]     = useState([]);
-  const [me, setMe]           = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [plans, setPlans]       = useState([]);
+  const [me, setMe]             = useState(null);
+  const [loading, setLoading]   = useState(true);
   const [sdkReady, setSdkReady] = useState(false);
   const [success, setSuccess]   = useState('');
 
@@ -63,12 +77,14 @@ export default function SubscriptionPage() {
       .then(([p, m]) => { setPlans(p.data.plans); setMe(m.data); setLoading(false); });
   }, []);
 
-  // Load PayPal SDK
   useEffect(() => {
-    if (document.getElementById('paypal-sdk')) { setSdkReady(true); return; }
+    if (document.getElementById('paypal-sdk')) {
+      setSdkReady(true);
+      return;
+    }
     const script = document.createElement('script');
-    script.id  = 'paypal-sdk';
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
+    script.id    = 'paypal-sdk';
+    script.src   = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
     script.setAttribute('data-sdk-integration-source', 'button-factory');
     script.onload = () => setSdkReady(true);
     document.body.appendChild(script);
@@ -109,7 +125,6 @@ export default function SubscriptionPage() {
         <p className="text-white/60">{lang === 'ar' ? 'إدارة باقتك واختيار ما يناسبك' : 'Manage your plan and choose what suits you'}</p>
       </div>
 
-      {/* Current plan */}
       <div className="card bg-gradient-to-br from-[#15151f] to-brand-950/20 border-brand-500/30">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -134,7 +149,6 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* PayPal badge */}
       <div className="flex items-center gap-3 p-3 bg-[#003087]/20 rounded-xl border border-[#003087]/30">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="#009cde"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/></svg>
         <span className="text-sm text-white/70">
@@ -142,10 +156,9 @@ export default function SubscriptionPage() {
         </span>
       </div>
 
-      {/* Plans */}
       <div className="grid md:grid-cols-2 gap-6">
         {plans.map(plan => {
-          const isCurrent    = me?.plan === plan.id;
+          const isCurrent     = me?.plan === plan.id;
           const isPremiumPlan = plan.id === 'premium';
 
           return (
@@ -186,7 +199,6 @@ export default function SubscriptionPage() {
                 ))}
               </ul>
 
-              {/* PayPal Button */}
               {sdkReady
                 ? <PayPalButton planId={plan.id} isCurrent={isCurrent} onSuccess={handleSuccess} />
                 : <div className="h-12 bg-white/5 rounded-lg animate-pulse" />
@@ -196,7 +208,6 @@ export default function SubscriptionPage() {
         })}
       </div>
 
-      {/* Security note */}
       <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex gap-3">
         <CheckCircle className="text-green-400 shrink-0 mt-0.5" size={20} />
         <div className="text-sm text-green-200/90">
