@@ -5,7 +5,7 @@ import { subscriptionAPI } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import { useT, useI18n } from '@/lib/i18n';
-import { Crown, Check, Loader2, X, CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { Crown, Check, Loader2, X, CreditCard, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SubscriptionPage() {
@@ -13,47 +13,36 @@ export default function SubscriptionPage() {
   const t    = useT();
   const lang = useI18n((s) => s.lang);
   const searchParams = useSearchParams();
-  const [plans, setPlans]     = useState([]);
-  const [me, setMe]           = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [paying, setPaying]   = useState('');
+  const [plans, setPlans]       = useState([]);
+  const [me, setMe]             = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [paying, setPaying]     = useState('');
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      subscriptionAPI.plans(),
-      subscriptionAPI.me(),
-    ]).then(([p, m]) => {
-      setPlans(p.data.plans);
-      setMe(m.data);
-      setLoading(false);
-    });
+    Promise.all([subscriptionAPI.plans(), subscriptionAPI.me()])
+      .then(([p, m]) => { setPlans(p.data.plans); setMe(m.data); setLoading(false); });
   }, []);
 
-  // Handle payment callback
+  // Handle PayPal return
   useEffect(() => {
-    const payment = searchParams.get('payment');
-    const plan    = searchParams.get('plan');
-    const paymentId = searchParams.get('paymentId');
+    const payment  = searchParams.get('payment');
+    const planId   = searchParams.get('plan');
+    const orderId  = searchParams.get('token'); // PayPal sends token=orderId
 
-    if (payment === 'success' && plan) {
+    if (payment === 'success' && planId && orderId) {
       setVerifying(true);
-      // Verify payment with backend
-      api.post('/subscription/verify', { paymentId: paymentId || 'latest', planId: plan })
+      api.post('/subscription/verify', { orderId, planId })
         .then(({ data }) => {
           toast.success(data.message || '✅ تم تفعيل الباقة!');
           fetchUser();
           subscriptionAPI.me().then(({ data: m }) => setMe(m));
         })
-        .catch(() => {
-          toast.success('✅ تم الدفع! سيتم تفعيل باقتك خلال دقائق.');
-        })
+        .catch(() => toast.error('حدث خطأ في التحقق. تواصل مع الدعم.'))
         .finally(() => setVerifying(false));
-
-      // Clean URL
       window.history.replaceState({}, '', '/dashboard/subscription');
-    } else if (payment === 'failed') {
-      toast.error('❌ فشل الدفع. حاول مرة أخرى.');
+    } else if (payment === 'cancelled') {
+      toast.error('تم إلغاء الدفع.');
       window.history.replaceState({}, '', '/dashboard/subscription');
     }
   }, []);
@@ -63,27 +52,22 @@ export default function SubscriptionPage() {
     setPaying(planId);
     try {
       const { data } = await api.post('/subscription/checkout', { planId });
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      }
+      if (data.paymentUrl) window.location.href = data.paymentUrl;
     } catch (err) {
       toast.error(err.response?.data?.error || 'فشل إنشاء رابط الدفع');
       setPaying('');
     }
   };
 
-  if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-500" size={32} /></div>;
-  }
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-500" size={32} /></div>;
 
   return (
     <div className="space-y-8 max-w-5xl">
-      {/* Verifying overlay */}
       {verifying && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
           <div className="card text-center p-8">
             <Loader2 className="animate-spin text-green-400 mx-auto mb-4" size={40} />
-            <div className="font-bold text-lg">{lang === 'ar' ? 'جاري التحقق من الدفع...' : 'Verifying payment...'}</div>
+            <div className="font-bold text-lg">{lang === 'ar' ? 'جاري تفعيل الباقة...' : 'Activating your plan...'}</div>
           </div>
         </div>
       )}
@@ -110,9 +94,6 @@ export default function SubscriptionPage() {
                 {me.daysRemaining !== null && ` (${me.daysRemaining} ${t('daysRemaining')})`}
               </div>
             )}
-            {!me?.expiresAt && me?.plan && (
-              <div className="text-xs text-green-400 mt-1">✅ {lang === 'ar' ? 'باقة نشطة' : 'Active plan'}</div>
-            )}
           </div>
           <div>
             <div className="text-sm text-white/60">{lang === 'ar' ? 'السيرفرات المسجلة' : 'Registered Servers'}</div>
@@ -121,16 +102,15 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* Payment methods badge */}
-      <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
-        <CreditCard size={20} className="text-white/60" />
-        <span className="text-sm text-white/60">
-          {lang === 'ar' ? 'الدفع عبر:' : 'Pay via:'}
+      {/* PayPal badge */}
+      <div className="flex items-center gap-3 p-3 bg-[#003087]/20 rounded-xl border border-[#003087]/30">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#009cde"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/></svg>
+        <span className="text-sm text-white/70">
+          {lang === 'ar' ? 'الدفع عبر PayPal — Visa · Mastercard · PayPal Balance' : 'Pay via PayPal — Visa · Mastercard · PayPal Balance'}
         </span>
-        <span className="text-sm font-medium">Mada · Visa · Mastercard · Apple Pay · STC Pay</span>
       </div>
 
-      {/* Plans grid */}
+      {/* Plans */}
       <div className="grid md:grid-cols-2 gap-6">
         {plans.map(plan => {
           const isCurrent    = me?.plan === plan.id;
@@ -146,7 +126,6 @@ export default function SubscriptionPage() {
                   <Crown size={12} /> {t('mostPopular')}
                 </div>
               )}
-
               {isCurrent && (
                 <div className="absolute -top-3 left-6 flex items-center gap-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
                   <CheckCircle size={12} /> {lang === 'ar' ? 'باقتك الحالية' : 'Current Plan'}
@@ -157,13 +136,12 @@ export default function SubscriptionPage() {
                 {lang === 'ar' ? plan.name : plan.nameEn}
               </div>
 
-              <div className="mb-2">
-                <span className="text-4xl font-black">{plan.price}</span>
-                <span className="text-white/50 text-lg"> {plan.currency}</span>
+              <div className="mb-4">
+                <span className="text-4xl font-black">${plan.price}</span>
                 <span className="text-white/50">{t('perMonth')}</span>
               </div>
 
-              <ul className="space-y-3 mb-6 mt-4">
+              <ul className="space-y-3 mb-6">
                 {plan.features.map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm">
                     <Check className={isPremiumPlan ? 'text-brand-400' : 'text-green-400'} size={16} />
@@ -177,21 +155,16 @@ export default function SubscriptionPage() {
                 ))}
               </ul>
 
-              <button
-                onClick={() => handleCheckout(plan.id)}
-                disabled={isCurrent || isLoading}
+              <button onClick={() => handleCheckout(plan.id)} disabled={isCurrent || isLoading}
                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition ${
-                  isCurrent
-                    ? 'bg-white/5 text-white/50 cursor-not-allowed'
-                    : isPremiumPlan
-                      ? 'btn-primary'
-                      : 'btn-secondary'
-                }`}>
+                  isCurrent ? 'bg-white/5 text-white/50 cursor-not-allowed'
+                  : isPremiumPlan ? 'btn-primary' : 'btn-secondary'
+                } disabled:opacity-50`}>
                 {isLoading
                   ? <><Loader2 className="animate-spin" size={16} /> {lang === 'ar' ? 'جاري التوجيه...' : 'Redirecting...'}</>
                   : isCurrent
-                    ? `✓ ${lang === 'ar' ? 'باقتك الحالية' : 'Your Current Plan'}`
-                    : <><CreditCard size={16} /> {lang === 'ar' ? `اشترك بـ ${plan.price} ${plan.currency}` : `Subscribe ${plan.price} ${plan.currency}`}</>
+                    ? `✓ ${lang === 'ar' ? 'باقتك الحالية' : 'Your Plan'}`
+                    : <><CreditCard size={16} /> {lang === 'ar' ? `اشترك - $${plan.price}` : `Subscribe - $${plan.price}`}</>
                 }
               </button>
             </div>
@@ -205,9 +178,7 @@ export default function SubscriptionPage() {
         <div className="text-sm text-green-200/90">
           <div className="font-bold mb-1">{lang === 'ar' ? 'دفع آمن 100%' : '100% Secure Payment'}</div>
           <div className="text-green-200/70">
-            {lang === 'ar'
-              ? 'جميع المدفوعات تتم عبر MyFatoorah المعتمدة من البنك المركزي السعودي (SAMA). بياناتك محمية بالكامل.'
-              : 'All payments are processed through MyFatoorah, certified by SAMA. Your data is fully protected.'}
+            {lang === 'ar' ? 'جميع المدفوعات تتم عبر PayPal المشفرة والآمنة.' : 'All payments are processed through encrypted and secure PayPal.'}
           </div>
         </div>
       </div>
